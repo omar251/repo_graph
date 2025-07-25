@@ -298,6 +298,13 @@ function resolvePath(
     if (dependency.startsWith("./") || dependency.startsWith("../")) {
       let resolved = path.resolve(currentDir, dependency);
 
+      // If dependency already has extension, check directly
+      if (path.extname(dependency)) {
+        if (fs.existsSync(resolved)) {
+          return resolved;
+        }
+      }
+
       // Try different extensions
       const extensions = [
         ".js",

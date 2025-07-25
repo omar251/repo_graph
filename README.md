@@ -100,14 +100,35 @@ The tool generates `network-data.json` containing:
 
 ## Examples
 
-### Analyzing a Python Project
+The repository includes example projects to test the tool:
+
+### Using the JavaScript Example
 ```bash
-node analyze_dependencies.js ~/projects/my-python-app/src
+# Analyze the included JavaScript example
+node analyze_dependencies.js ./example
+
+# Start server and view results
+python -m http.server 8000
+# Open http://localhost:8000/dependency_graph.html
 ```
 
-### Analyzing a JavaScript Project
+### Using the Python Example
 ```bash
+# Analyze the included Python example
+node analyze_dependencies.js ./example_python
+
+# Start server and view results
+python -m http.server 8000
+# Open http://localhost:8000/dependency_graph.html
+```
+
+### Analyzing Your Own Projects
+```bash
+# Analyze any JavaScript project
 node analyze_dependencies.js ~/projects/my-js-app/src
+
+# Analyze any Python project
+node analyze_dependencies.js ~/projects/my-python-app/src
 ```
 
 ### Sample Output Structure

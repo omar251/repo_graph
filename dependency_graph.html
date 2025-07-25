@@ -416,6 +416,22 @@
                 </div>
 
                 <div class="control-section">
+                    <h3><i class="fas fa-folder"></i> Repository Path</h3>
+                    <div class="filter-group">
+                        <input type="text" id="repo-path" class="search-box" placeholder="/path/to/repository" />
+                        <input type="file" id="folder-input" webkitdirectory style="display: none;" />
+                        <div style="display: flex; gap: 5px; margin-top: 10px;">
+                            <button class="btn btn-outline" id="browse-btn" style="flex: 1;">
+                                <i class="fas fa-folder-open"></i> Browse
+                            </button>
+                            <button class="btn btn-primary" id="analyze-btn" style="flex: 2;">
+                                <i class="fas fa-play"></i> Analyze
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-number" id="total-files">0</div>
@@ -563,31 +579,38 @@
                     }
                 }
 
-                async loadData() {
+                async loadData(customData = null) {
                     try {
-                        // Try to load network-data.json first (new format)
-                        const response = await fetch("network-data.json");
-                        if (!response.ok) {
-                            throw new Error("Failed to load network data");
-                        }
-
-                        const text = await response.text();
                         let data;
-
-                        // Try to parse as JSON first
-                        try {
-                            data = JSON.parse(text);
-                        } catch {
-                            // If that fails, try to extract from JavaScript variable
-                            const match = text.match(
-                                /const\s+networkData\s*=\s*({[\s\S]*});?\s*$/,
-                            );
-                            if (match) {
-                                data = JSON.parse(match[1]);
-                            } else {
-                                throw new Error("Invalid data format");
+                        
+                        if (customData) {
+                            data = customData;
+                        } else {
+                            // Try to load network-data.json first (new format)
+                            const response = await fetch("network-data.json");
+                            if (!response.ok) {
+                                throw new Error("Failed to load network data");
+                            }
+                            
+                            const text = await response.text();
+                            
+                            // Try to parse as JSON first
+                            try {
+                                data = JSON.parse(text);
+                            } catch {
+                                // If that fails, try to extract from JavaScript variable
+                                const match = text.match(
+                                    /const\s+networkData\s*=\s*({[\s\S]*});?\s*$/,
+                                );
+                                if (match) {
+                                    data = JSON.parse(match[1]);
+                                } else {
+                                    throw new Error("Invalid data format");
+                                }
                             }
                         }
+
+
 
                         this.originalData = data;
                         this.processData(data);
@@ -818,6 +841,30 @@
                         .getElementById("export-image")
                         .addEventListener("click", () => {
                             this.exportImage();
+                        });
+                        
+                    // Analyze button
+                    document
+                        .getElementById("analyze-btn")
+                        .addEventListener("click", () => {
+                            this.analyzeRepository();
+                        });
+                        
+                    // Browse button
+                    document
+                        .getElementById("browse-btn")
+                        .addEventListener("click", () => {
+                            document.getElementById("folder-input").click();
+                        });
+                        
+                    // Folder input
+                    document
+                        .getElementById("folder-input")
+                        .addEventListener("change", (e) => {
+                            if (e.target.files.length > 0) {
+                                const path = e.target.files[0].webkitRelativePath.split('/')[0];
+                                document.getElementById("repo-path").value = path;
+                            }
                         });
                 }
 
@@ -1053,6 +1100,39 @@
                 hideLoading() {
                     document.getElementById("loading-overlay").style.display =
                         "none";
+                }
+
+                async analyzeRepository() {
+                    const repoPath = document.getElementById('repo-path').value.trim();
+                    if (!repoPath) {
+                        alert('Please enter a repository path');
+                        return;
+                    }
+                    
+                    document.getElementById('loading-overlay').style.display = 'flex';
+                    
+                    try {
+                        const response = await fetch('/analyze', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ repoPath })
+                        });
+                        
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Analysis failed');
+                        }
+                        
+                        const data = await response.json();
+                        await this.loadData(data);
+                        this.setupNetwork();
+                        this.updateStats();
+                        
+                    } catch (error) {
+                        this.showError(`Analysis failed: ${error.message}`);
+                    } finally {
+                        this.hideLoading();
+                    }
                 }
 
                 showError(message) {
