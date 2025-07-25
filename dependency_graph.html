@@ -29,14 +29,18 @@
             .container {
                 display: flex;
                 height: 100vh;
-                max-width: 1400px;
-                margin: 0 auto;
+                width: 100vw;
+                max-width: none;
+                margin: 0;
                 background: white;
                 box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
             }
 
             .sidebar {
                 width: 320px;
+                min-width: 320px;
+                max-width: 320px;
                 background: #f8f9fa;
                 border-right: 1px solid #e9ecef;
                 overflow-y: auto;
@@ -247,6 +251,8 @@
                 flex: 1;
                 display: flex;
                 flex-direction: column;
+                min-width: 0;
+                overflow: hidden;
             }
 
             .toolbar {
@@ -300,12 +306,15 @@
                 flex: 1;
                 position: relative;
                 background: #fff;
+                min-height: 0;
+                overflow: hidden;
             }
 
             #network {
                 width: 100%;
                 height: 100%;
                 border: none;
+                min-height: 400px;
             }
 
             .loading-overlay {
@@ -608,7 +617,10 @@
                             label: node.label,
                             title: `${node.path}\nType: ${node.type || "unknown"}${node.external ? "\n(External)" : ""}`,
                             group: node.type || "unknown",
-                            color: this.getNodeColor(node.type, node.external),
+                            color: {
+                                background: this.getNodeColor(node.type, node.external),
+                                border: "#fff"
+                            },
                             shape: node.external ? "box" : "dot",
                             size: node.external ? 12 : 16,
                             font: {
@@ -660,7 +672,6 @@
                     const options = {
                         nodes: {
                             borderWidth: 2,
-                            borderColor: "#fff",
                             borderWidthSelected: 3,
                             shadow: {
                                 enabled: true,
@@ -731,6 +742,7 @@
                         this.network.setOptions({
                             physics: { enabled: false },
                         });
+                        this.network.fit();
                     });
                 }
 
@@ -974,7 +986,10 @@
                             ...node,
                             title: `${node.path}\nType: ${node.type || "unknown"}${node.external ? "\n(External)" : ""}`,
                             group: node.type || "unknown",
-                            color: this.getNodeColor(node.type, node.external),
+                            color: {
+                                background: this.getNodeColor(node.type, node.external),
+                                border: "#fff"
+                            },
                             shape: node.external ? "box" : "dot",
                             size: node.external ? 12 : 16,
                             font: {
