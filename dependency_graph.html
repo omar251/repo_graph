@@ -1,47 +1,1067 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dependency Graph</title>
-  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  <style type="text/css">
-    #mynetwork {
-      width: 100%;
-      height: 800px;
-      border: 1px solid lightgray;
-    }
-  </style>
-</head>
-<body>
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Repository Dependency Graph</title>
+        <script
+            type="text/javascript"
+            src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-<div id="mynetwork"></div>
+            body {
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                color: #333;
+            }
 
-<script src="network-data.json"></script>
-<script type="text/javascript">
-  var container = document.getElementById('mynetwork');
-  var data = {
-    nodes: new vis.DataSet(networkData.nodes),
-    edges: new vis.DataSet(networkData.edges)
-  };
-  var options = {
-    nodes: {
-      shape: 'dot',
-      size: 16
-    },
-    physics: {
-      forceAtlas2Based: {
-        gravitationalConstant: -26,
-        centralGravity: 0.005,
-        springLength: 230,
-        springConstant: 0.18
-      },
-      maxVelocity: 146,
-      solver: 'forceAtlas2Based',
-      timestep: 0.35,
-      stabilization: {iterations: 150}
-    }
-  };
-  var network = new vis.Network(container, data, options);
-</script>
+            .container {
+                display: flex;
+                height: 100vh;
+                max-width: 1400px;
+                margin: 0 auto;
+                background: white;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            }
 
-</body>
+            .sidebar {
+                width: 320px;
+                background: #f8f9fa;
+                border-right: 1px solid #e9ecef;
+                overflow-y: auto;
+                flex-shrink: 0;
+            }
+
+            .sidebar-header {
+                padding: 20px;
+                background: #343a40;
+                color: white;
+                text-align: center;
+            }
+
+            .sidebar-header h1 {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+
+            .sidebar-header p {
+                font-size: 0.9rem;
+                opacity: 0.8;
+            }
+
+            .control-section {
+                padding: 20px;
+                border-bottom: 1px solid #e9ecef;
+            }
+
+            .control-section h3 {
+                margin-bottom: 15px;
+                color: #495057;
+                font-size: 1.1rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .search-box {
+                width: 100%;
+                padding: 10px 12px;
+                border: 2px solid #e9ecef;
+                border-radius: 6px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+            }
+
+            .search-box:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+
+            .filter-group {
+                margin-bottom: 15px;
+            }
+
+            .filter-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                color: #495057;
+            }
+
+            .checkbox-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .checkbox-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .checkbox-item input[type="checkbox"] {
+                width: 16px;
+                height: 16px;
+            }
+
+            .checkbox-item label {
+                margin: 0;
+                font-weight: normal;
+                cursor: pointer;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .stat-card {
+                background: white;
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid #e9ecef;
+                text-align: center;
+            }
+
+            .stat-number {
+                font-size: 1.8rem;
+                font-weight: bold;
+                color: #667eea;
+                margin-bottom: 5px;
+            }
+
+            .stat-label {
+                font-size: 0.85rem;
+                color: #6c757d;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .legend {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 12px;
+                border-radius: 6px;
+                background: white;
+                border: 1px solid #e9ecef;
+            }
+
+            .legend-color {
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+            }
+
+            .legend-color.js {
+                background: #f7df1e;
+            }
+            .legend-color.jsx {
+                background: #61dafb;
+            }
+            .legend-color.ts {
+                background: #3178c6;
+            }
+            .legend-color.tsx {
+                background: #61dafb;
+                border: 2px solid #3178c6;
+            }
+            .legend-color.py {
+                background: #3776ab;
+            }
+            .legend-color.external {
+                background: #dc3545;
+            }
+
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .btn-primary {
+                background: #667eea;
+                color: white;
+            }
+
+            .btn-primary:hover {
+                background: #5a6fd8;
+                transform: translateY(-1px);
+            }
+
+            .btn-secondary {
+                background: #6c757d;
+                color: white;
+            }
+
+            .btn-secondary:hover {
+                background: #5a6268;
+            }
+
+            .btn-outline {
+                background: transparent;
+                border: 1px solid #667eea;
+                color: #667eea;
+            }
+
+            .btn-outline:hover {
+                background: #667eea;
+                color: white;
+            }
+
+            .main-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .toolbar {
+                background: #f8f9fa;
+                padding: 15px 20px;
+                border-bottom: 1px solid #e9ecef;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .toolbar-left {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .toolbar-right {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .zoom-controls {
+                display: flex;
+                gap: 5px;
+            }
+
+            .zoom-btn {
+                width: 36px;
+                height: 36px;
+                border: 1px solid #ccc;
+                background: white;
+                border-radius: 4px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                transition: all 0.2s;
+            }
+
+            .zoom-btn:hover {
+                background: #f8f9fa;
+                border-color: #667eea;
+            }
+
+            #network-container {
+                flex: 1;
+                position: relative;
+                background: #fff;
+            }
+
+            #network {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+
+            .loading-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                z-index: 1000;
+            }
+
+            .loading-spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #667eea;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 15px;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .node-info {
+                position: absolute;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 6px;
+                font-size: 12px;
+                pointer-events: none;
+                z-index: 100;
+                max-width: 200px;
+                display: none;
+            }
+
+            .error-message {
+                background: #f8d7da;
+                color: #721c24;
+                padding: 15px;
+                border-radius: 6px;
+                border: 1px solid #f5c6cb;
+                margin: 20px;
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    width: 100%;
+                    max-height: 300px;
+                }
+
+                .stats-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+
+            .highlight {
+                animation: highlight 0.5s ease-in-out;
+            }
+
+            @keyframes highlight {
+                0% {
+                    background-color: #fff3cd;
+                }
+                100% {
+                    background-color: transparent;
+                }
+            }
+
+            .hidden {
+                display: none !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h1>
+                        <i class="fas fa-project-diagram"></i> Dependency Graph
+                    </h1>
+                    <p>Interactive Code Analysis</p>
+                </div>
+
+                <div class="control-section">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-files">0</div>
+                            <div class="stat-label">Files</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-dependencies">
+                                0
+                            </div>
+                            <div class="stat-label">Dependencies</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="visible-files">0</div>
+                            <div class="stat-label">Visible</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="selected-node">-</div>
+                            <div class="stat-label">Selected</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-search"></i> Search & Filter</h3>
+                    <div class="filter-group">
+                        <input
+                            type="text"
+                            id="search-box"
+                            class="search-box"
+                            placeholder="Search files..."
+                        />
+                    </div>
+
+                    <div class="filter-group">
+                        <label>File Types:</label>
+                        <div class="checkbox-group" id="file-type-filters">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="show-external" checked />
+                            <label for="show-external"
+                                >Show External Dependencies</label
+                            >
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="show-isolated" checked />
+                            <label for="show-isolated"
+                                >Show Isolated Files</label
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-palette"></i> Legend</h3>
+                    <div class="legend" id="legend">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-tools"></i> Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="reset-view">
+                            <i class="fas fa-home"></i> Reset View
+                        </button>
+                        <button class="btn btn-outline" id="center-selected">
+                            <i class="fas fa-crosshairs"></i> Center Selected
+                        </button>
+                        <button class="btn btn-secondary" id="export-image">
+                            <i class="fas fa-download"></i> Export PNG
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <span id="repo-info">Loading...</span>
+                    </div>
+                    <div class="toolbar-right">
+                        <div class="zoom-controls">
+                            <button
+                                class="zoom-btn"
+                                id="zoom-in"
+                                title="Zoom In"
+                            >
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button
+                                class="zoom-btn"
+                                id="zoom-out"
+                                title="Zoom Out"
+                            >
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button
+                                class="zoom-btn"
+                                id="zoom-fit"
+                                title="Fit to Screen"
+                            >
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="network-container">
+                    <div id="network"></div>
+                    <div class="loading-overlay" id="loading-overlay">
+                        <div class="loading-spinner"></div>
+                        <div>Loading dependency graph...</div>
+                    </div>
+                    <div class="node-info" id="node-info"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            class DependencyGraphViewer {
+                constructor() {
+                    this.network = null;
+                    this.nodes = null;
+                    this.edges = null;
+                    this.originalData = null;
+                    this.selectedNode = null;
+                    this.fileTypes = new Set();
+
+                    this.init();
+                }
+
+                async init() {
+                    try {
+                        await this.loadData();
+                        this.setupNetwork();
+                        this.setupEventListeners();
+                        this.updateStats();
+                        this.hideLoading();
+                    } catch (error) {
+                        this.showError(error.message);
+                    }
+                }
+
+                async loadData() {
+                    try {
+                        // Try to load network-data.json first (new format)
+                        const response = await fetch("network-data.json");
+                        if (!response.ok) {
+                            throw new Error("Failed to load network data");
+                        }
+
+                        const text = await response.text();
+                        let data;
+
+                        // Try to parse as JSON first
+                        try {
+                            data = JSON.parse(text);
+                        } catch {
+                            // If that fails, try to extract from JavaScript variable
+                            const match = text.match(
+                                /const\s+networkData\s*=\s*({[\s\S]*});?\s*$/,
+                            );
+                            if (match) {
+                                data = JSON.parse(match[1]);
+                            } else {
+                                throw new Error("Invalid data format");
+                            }
+                        }
+
+                        this.originalData = data;
+                        this.processData(data);
+
+                        // Update repo info
+                        if (data.metadata) {
+                            const repoName =
+                                data.metadata.repository.split("/").pop() ||
+                                "Repository";
+                            document.getElementById("repo-info").textContent =
+                                `${repoName} (${data.metadata.totalFiles} files, ${data.metadata.totalDependencies} dependencies)`;
+                        }
+                    } catch (error) {
+                        throw new Error(
+                            `Failed to load data: ${error.message}`,
+                        );
+                    }
+                }
+
+                processData(data) {
+                    // Process nodes
+                    const processedNodes = data.nodes.map((node) => {
+                        this.fileTypes.add(node.type || "unknown");
+
+                        return {
+                            id: node.id,
+                            label: node.label,
+                            title: `${node.path}\nType: ${node.type || "unknown"}${node.external ? "\n(External)" : ""}`,
+                            group: node.type || "unknown",
+                            color: this.getNodeColor(node.type, node.external),
+                            shape: node.external ? "box" : "dot",
+                            size: node.external ? 12 : 16,
+                            font: {
+                                size: node.external ? 10 : 12,
+                                color: "#333",
+                            },
+                            ...node,
+                        };
+                    });
+
+                    // Process edges
+                    const processedEdges = data.edges.map((edge) => ({
+                        id: `${edge.from}-${edge.to}`,
+                        from: edge.from,
+                        to: edge.to,
+                        arrows: "to",
+                        color: { color: "#848484", opacity: 0.6 },
+                        width: 1,
+                        smooth: { type: "continuous" },
+                        dependency: edge.dependency,
+                    }));
+
+                    this.nodes = new vis.DataSet(processedNodes);
+                    this.edges = new vis.DataSet(processedEdges);
+
+                    this.setupFilters();
+                    this.setupLegend();
+                }
+
+                getNodeColor(type, external = false) {
+                    if (external) return "#dc3545";
+
+                    const colors = {
+                        js: "#f7df1e",
+                        jsx: "#61dafb",
+                        ts: "#3178c6",
+                        tsx: "#61dafb",
+                        py: "#3776ab",
+                        unknown: "#6c757d",
+                    };
+
+                    return colors[type] || colors.unknown;
+                }
+
+                setupNetwork() {
+                    const container = document.getElementById("network");
+                    const data = { nodes: this.nodes, edges: this.edges };
+
+                    const options = {
+                        nodes: {
+                            borderWidth: 2,
+                            borderColor: "#fff",
+                            borderWidthSelected: 3,
+                            shadow: {
+                                enabled: true,
+                                color: "rgba(0,0,0,0.1)",
+                                size: 5,
+                                x: 2,
+                                y: 2,
+                            },
+                        },
+                        edges: {
+                            smooth: {
+                                enabled: true,
+                                type: "continuous",
+                            },
+                            hoverWidth: 2,
+                            selectionWidth: 2,
+                        },
+                        physics: {
+                            enabled: true,
+                            forceAtlas2Based: {
+                                gravitationalConstant: -50,
+                                centralGravity: 0.01,
+                                springLength: 200,
+                                springConstant: 0.08,
+                                damping: 0.4,
+                                avoidOverlap: 0.5,
+                            },
+                            maxVelocity: 50,
+                            solver: "forceAtlas2Based",
+                            timestep: 0.35,
+                            stabilization: {
+                                iterations: 150,
+                                updateInterval: 25,
+                            },
+                        },
+                        interaction: {
+                            hover: true,
+                            hoverConnectedEdges: true,
+                            selectConnectedEdges: false,
+                            tooltipDelay: 300,
+                        },
+                        layout: {
+                            improvedLayout: true,
+                            clusterThreshold: 150,
+                        },
+                    };
+
+                    this.network = new vis.Network(container, data, options);
+
+                    // Network event listeners
+                    this.network.on("click", (params) => {
+                        if (params.nodes.length > 0) {
+                            this.selectNode(params.nodes[0]);
+                        } else {
+                            this.deselectNode();
+                        }
+                    });
+
+                    this.network.on("hoverNode", (params) => {
+                        this.showNodeInfo(params);
+                    });
+
+                    this.network.on("blurNode", () => {
+                        this.hideNodeInfo();
+                    });
+
+                    this.network.on("stabilizationIterationsDone", () => {
+                        this.network.setOptions({
+                            physics: { enabled: false },
+                        });
+                    });
+                }
+
+                setupEventListeners() {
+                    // Search
+                    document
+                        .getElementById("search-box")
+                        .addEventListener("input", (e) => {
+                            this.filterNodes(e.target.value);
+                        });
+
+                    // File type filters
+                    document
+                        .getElementById("file-type-filters")
+                        .addEventListener("change", () => {
+                            this.applyFilters();
+                        });
+
+                    // Show/hide options
+                    document
+                        .getElementById("show-external")
+                        .addEventListener("change", () => {
+                            this.applyFilters();
+                        });
+
+                    document
+                        .getElementById("show-isolated")
+                        .addEventListener("change", () => {
+                            this.applyFilters();
+                        });
+
+                    // Zoom controls
+                    document
+                        .getElementById("zoom-in")
+                        .addEventListener("click", () => {
+                            this.network.moveTo({
+                                scale: this.network.getScale() * 1.2,
+                            });
+                        });
+
+                    document
+                        .getElementById("zoom-out")
+                        .addEventListener("click", () => {
+                            this.network.moveTo({
+                                scale: this.network.getScale() * 0.8,
+                            });
+                        });
+
+                    document
+                        .getElementById("zoom-fit")
+                        .addEventListener("click", () => {
+                            this.network.fit();
+                        });
+
+                    // Action buttons
+                    document
+                        .getElementById("reset-view")
+                        .addEventListener("click", () => {
+                            this.resetView();
+                        });
+
+                    document
+                        .getElementById("center-selected")
+                        .addEventListener("click", () => {
+                            if (this.selectedNode) {
+                                this.network.focus(this.selectedNode, {
+                                    animation: true,
+                                });
+                            }
+                        });
+
+                    document
+                        .getElementById("export-image")
+                        .addEventListener("click", () => {
+                            this.exportImage();
+                        });
+                }
+
+                setupFilters() {
+                    const container =
+                        document.getElementById("file-type-filters");
+                    container.innerHTML = "";
+
+                    Array.from(this.fileTypes)
+                        .sort()
+                        .forEach((type) => {
+                            const div = document.createElement("div");
+                            div.className = "checkbox-item";
+                            div.innerHTML = `
+                        <input type="checkbox" id="filter-${type}" checked>
+                        <label for="filter-${type}">${type.toUpperCase()}</label>
+                    `;
+                            container.appendChild(div);
+                        });
+                }
+
+                setupLegend() {
+                    const container = document.getElementById("legend");
+                    container.innerHTML = "";
+
+                    const types = [
+                        { type: "js", label: "JavaScript" },
+                        { type: "jsx", label: "React JSX" },
+                        { type: "ts", label: "TypeScript" },
+                        { type: "tsx", label: "React TSX" },
+                        { type: "py", label: "Python" },
+                        { type: "external", label: "External", external: true },
+                    ];
+
+                    types.forEach(({ type, label, external }) => {
+                        if (this.fileTypes.has(type) || external) {
+                            const div = document.createElement("div");
+                            div.className = "legend-item";
+                            div.innerHTML = `
+                            <div class="legend-color ${type}"></div>
+                            <span>${label}</span>
+                        `;
+                            container.appendChild(div);
+                        }
+                    });
+                }
+
+                selectNode(nodeId) {
+                    this.selectedNode = nodeId;
+                    const node = this.nodes.get(nodeId);
+                    document.getElementById("selected-node").textContent = node
+                        ? node.label
+                        : "-";
+
+                    // Highlight connected nodes
+                    const connectedNodes =
+                        this.network.getConnectedNodes(nodeId);
+                    const connectedEdges =
+                        this.network.getConnectedEdges(nodeId);
+
+                    this.network.selectNodes([nodeId]);
+                    this.network.selectEdges(connectedEdges);
+                }
+
+                deselectNode() {
+                    this.selectedNode = null;
+                    document.getElementById("selected-node").textContent = "-";
+                    this.network.unselectAll();
+                }
+
+                showNodeInfo(params) {
+                    const nodeInfo = document.getElementById("node-info");
+                    const node = this.nodes.get(params.node);
+
+                    if (node) {
+                        const connectedCount = this.network.getConnectedNodes(
+                            params.node,
+                        ).length;
+                        nodeInfo.innerHTML = `
+                        <strong>${node.label}</strong><br>
+                        Path: ${node.path}<br>
+                        Type: ${node.type || "unknown"}<br>
+                        Connections: ${connectedCount}
+                        ${node.external ? "<br><em>External dependency</em>" : ""}
+                    `;
+
+                        nodeInfo.style.left = params.pointer.DOM.x + 10 + "px";
+                        nodeInfo.style.top = params.pointer.DOM.y + 10 + "px";
+                        nodeInfo.style.display = "block";
+                    }
+                }
+
+                hideNodeInfo() {
+                    document.getElementById("node-info").style.display = "none";
+                }
+
+                filterNodes(searchTerm) {
+                    const filteredNodes = this.originalData.nodes.filter(
+                        (node) =>
+                            node.label
+                                .toLowerCase()
+                                .includes(searchTerm.toLowerCase()) ||
+                            node.path
+                                .toLowerCase()
+                                .includes(searchTerm.toLowerCase()),
+                    );
+
+                    if (searchTerm) {
+                        const nodeIds = filteredNodes.map((n) => n.id);
+                        this.network.selectNodes(nodeIds);
+
+                        if (nodeIds.length > 0) {
+                            this.network.focus(nodeIds[0], { animation: true });
+                        }
+                    } else {
+                        this.network.unselectAll();
+                    }
+                }
+
+                applyFilters() {
+                    const showExternal =
+                        document.getElementById("show-external").checked;
+                    const showIsolated =
+                        document.getElementById("show-isolated").checked;
+
+                    const activeTypes = Array.from(this.fileTypes).filter(
+                        (type) => {
+                            const checkbox = document.getElementById(
+                                `filter-${type}`,
+                            );
+                            return checkbox && checkbox.checked;
+                        },
+                    );
+
+                    const filteredNodes = this.originalData.nodes.filter(
+                        (node) => {
+                            if (!activeTypes.includes(node.type || "unknown"))
+                                return false;
+                            if (!showExternal && node.external) return false;
+
+                            if (!showIsolated) {
+                                const hasConnections =
+                                    this.originalData.edges.some(
+                                        (edge) =>
+                                            edge.from === node.id ||
+                                            edge.to === node.id,
+                                    );
+                                if (!hasConnections) return false;
+                            }
+
+                            return true;
+                        },
+                    );
+
+                    const filteredNodeIds = filteredNodes.map((n) => n.id);
+                    const filteredEdges = this.originalData.edges.filter(
+                        (edge) =>
+                            filteredNodeIds.includes(edge.from) &&
+                            filteredNodeIds.includes(edge.to),
+                    );
+
+                    this.nodes.clear();
+                    this.edges.clear();
+                    this.nodes.add(
+                        filteredNodes.map((node) => ({
+                            ...node,
+                            title: `${node.path}\nType: ${node.type || "unknown"}${node.external ? "\n(External)" : ""}`,
+                            group: node.type || "unknown",
+                            color: this.getNodeColor(node.type, node.external),
+                            shape: node.external ? "box" : "dot",
+                            size: node.external ? 12 : 16,
+                            font: {
+                                size: node.external ? 10 : 12,
+                                color: "#333",
+                            },
+                        })),
+                    );
+                    this.edges.add(
+                        filteredEdges.map((edge) => ({
+                            id: `${edge.from}-${edge.to}`,
+                            from: edge.from,
+                            to: edge.to,
+                            arrows: "to",
+                            color: { color: "#848484", opacity: 0.6 },
+                            width: 1,
+                            smooth: { type: "continuous" },
+                            dependency: edge.dependency,
+                        })),
+                    );
+
+                    this.updateStats();
+                }
+
+                resetView() {
+                    this.network.fit();
+                    this.network.unselectAll();
+                    this.deselectNode();
+                    document.getElementById("search-box").value = "";
+
+                    // Reset all filters
+                    this.fileTypes.forEach((type) => {
+                        const checkbox = document.getElementById(
+                            `filter-${type}`,
+                        );
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    document.getElementById("show-external").checked = true;
+                    document.getElementById("show-isolated").checked = true;
+
+                    this.applyFilters();
+                }
+
+                exportImage() {
+                    const canvas = this.network.canvas.frame.canvas;
+                    const link = document.createElement("a");
+                    link.download = "dependency-graph.png";
+                    link.href = canvas.toDataURL();
+                    link.click();
+                }
+
+                updateStats() {
+                    document.getElementById("total-files").textContent =
+                        this.originalData.nodes.length;
+                    document.getElementById("total-dependencies").textContent =
+                        this.originalData.edges.length;
+                    document.getElementById("visible-files").textContent =
+                        this.nodes.length;
+                }
+
+                hideLoading() {
+                    document.getElementById("loading-overlay").style.display =
+                        "none";
+                }
+
+                showError(message) {
+                    const container =
+                        document.getElementById("network-container");
+                    container.innerHTML = `
+                    <div class="error-message">
+                        <h3>Error Loading Dependency Graph</h3>
+                        <p>${message}</p>
+                        <p>Please ensure that:</p>
+                        <ul>
+                            <li>The network-data.json file exists</li>
+                            <li>You're serving this page via HTTP (not file://)</li>
+                            <li>The data file is valid JSON or JavaScript</li>
+                        </ul>
+                    </div>
+                `;
+                }
+            }
+
+            // Initialize the application
+            document.addEventListener("DOMContentLoaded", () => {
+                new DependencyGraphViewer();
+            });
+        </script>
+    </body>
 </html>

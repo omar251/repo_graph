@@ -1,0 +1,37 @@
+{
+  "name": "repo-dependency-graph",
+  "version": "1.0.0",
+  "description": "A tool for analyzing and visualizing code dependencies in JavaScript and Python projects",
+  "main": "analyze_dependencies.js",
+  "bin": {
+    "repo-graph": "./analyze_dependencies.js"
+  },
+  "scripts": {
+    "analyze": "node analyze_dependencies.js",
+    "start": "node analyze_dependencies.js",
+    "serve": "python -m http.server 8000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "dependency-analysis",
+    "code-visualization",
+    "network-graph",
+    "javascript",
+    "python",
+    "static-analysis",
+    "dependency-graph"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": ""
+}
