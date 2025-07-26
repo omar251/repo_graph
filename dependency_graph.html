@@ -617,11 +617,15 @@
 
                         // Update repo info
                         if (data.metadata) {
-                            const repoName =
-                                data.metadata.repository.split("/").pop() ||
-                                "Repository";
+                            const repoName = data.metadata.repository 
+                                ? data.metadata.repository.split("/").pop()
+                                : data.metadata.repositoryPath 
+                                    ? data.metadata.repositoryPath.split("/").pop()
+                                    : "Repository";
+                            const totalFiles = data.metadata.totalFiles || data.metadata.stats?.filesProcessed || data.nodes?.length || 0;
+                            const totalDependencies = data.metadata.totalDependencies || data.metadata.stats?.dependenciesFound || data.edges?.length || 0;
                             document.getElementById("repo-info").textContent =
-                                `${repoName} (${data.metadata.totalFiles} files, ${data.metadata.totalDependencies} dependencies)`;
+                                `${repoName} (${totalFiles} files, ${totalDependencies} dependencies)`;
                         }
                     } catch (error) {
                         throw new Error(
@@ -631,24 +635,36 @@
                 }
 
                 processData(data) {
-                    // Process nodes
+                    // Process nodes with better labeling for duplicates
                     const processedNodes = data.nodes.map((node) => {
                         this.fileTypes.add(node.type || "unknown");
+                        
+                        // Create more descriptive labels for missing/external dependencies
+                        let displayLabel = node.label;
+                        let nodeTitle = `${node.path}\nType: ${node.type || "unknown"}`;
+                        
+                        if (node.type === "missing") {
+                            displayLabel = `${node.label} (missing)`;
+                            nodeTitle += "\n(Missing dependency)";
+                        } else if (node.external) {
+                            displayLabel = `${node.label} (external)`;
+                            nodeTitle += "\n(External dependency)";
+                        }
 
                         return {
                             id: node.id,
-                            label: node.label,
-                            title: `${node.path}\nType: ${node.type || "unknown"}${node.external ? "\n(External)" : ""}`,
+                            label: displayLabel,
+                            title: nodeTitle,
                             group: node.type || "unknown",
                             color: {
                                 background: this.getNodeColor(node.type, node.external),
-                                border: "#fff"
+                                border: node.type === "missing" ? "#dc3545" : "#fff"
                             },
-                            shape: node.external ? "box" : "dot",
-                            size: node.external ? 12 : 16,
+                            shape: node.external ? "box" : (node.type === "missing" ? "triangle" : "dot"),
+                            size: node.external ? 20 : (node.type === "missing" ? 15 : 25),
                             font: {
-                                size: node.external ? 10 : 12,
-                                color: "#333",
+                                size: node.external ? 10 : (node.type === "missing" ? 9 : 12),
+                                color: node.type === "missing" ? "#dc3545" : "#333",
                             },
                             ...node,
                         };
@@ -659,11 +675,14 @@
                         id: `${edge.from}-${edge.to}`,
                         from: edge.from,
                         to: edge.to,
-                        arrows: "to",
-                        color: { color: "#848484", opacity: 0.6 },
-                        width: 1,
-                        smooth: { type: "continuous" },
-                        dependency: edge.dependency,
+                        arrows: edge.arrows || "to",
+                        color: edge.color || { color: "#848484", opacity: 0.6 },
+                        width: edge.width || 1,
+                        smooth: edge.smooth || { type: "continuous" },
+                        dependency: edge.dependency || edge.label || edge.type,
+                        label: edge.label,
+                        type: edge.type,
+                        importType: edge.importType,
                     }));
 
                     this.nodes = new vis.DataSet(processedNodes);
@@ -675,13 +694,16 @@
 
                 getNodeColor(type, external = false) {
                     if (external) return "#dc3545";
+                    if (type === "missing") return "#ffc107";
 
                     const colors = {
+                        javascript: "#f7df1e",
                         js: "#f7df1e",
                         jsx: "#61dafb",
                         ts: "#3178c6",
                         tsx: "#61dafb",
                         py: "#3776ab",
+                        python: "#3776ab",
                         unknown: "#6c757d",
                     };
 
@@ -703,32 +725,80 @@
                                 x: 2,
                                 y: 2,
                             },
+                            margin: 20,
+                            scaling: {
+                                min: 15,
+                                max: 40,
+                            },
+                            font: {
+                                size: 12,
+                                color: "#333",
+                            },
+                            chosen: {
+                                node: function(values, id, selected, hovering) {
+                                    values.size = values.size * 1.2;
+                                }
+                            }
                         },
                         edges: {
                             smooth: {
                                 enabled: true,
                                 type: "continuous",
+                                roundness: 0.3,
                             },
-                            hoverWidth: 2,
-                            selectionWidth: 2,
+                            hoverWidth: 3,
+                            selectionWidth: 3,
+                            width: 1.5,
+                            arrows: {
+                                to: {
+                                    enabled: true,
+                                    scaleFactor: 1.0,
+                                    type: "arrow"
+                                }
+                            },
+                            color: {
+                                color: "#848484",
+                                highlight: "#333333",
+                                hover: "#333333",
+                                inherit: false,
+                                opacity: 0.7
+                            },
+                            length: 350,
+                            physics: true,
+                            chosen: {
+                                edge: function(values, id, selected, hovering) {
+                                    values.width = values.width * 2;
+                                }
+                            }
                         },
                         physics: {
                             enabled: true,
-                            forceAtlas2Based: {
-                                gravitationalConstant: -50,
-                                centralGravity: 0.01,
-                                springLength: 200,
-                                springConstant: 0.08,
-                                damping: 0.4,
-                                avoidOverlap: 0.5,
+                            barnesHut: {
+                                gravitationalConstant: -3000,
+                                centralGravity: 0.1,
+                                springLength: 400,
+                                springConstant: 0.02,
+                                damping: 0.15,
+                                avoidOverlap: 1.5
                             },
-                            maxVelocity: 50,
-                            solver: "forceAtlas2Based",
-                            timestep: 0.35,
+                            maxVelocity: 30,
+                            minVelocity: 0.1,
+                            solver: "barnesHut",
+                            timestep: 0.5,
                             stabilization: {
-                                iterations: 150,
-                                updateInterval: 25,
+                                iterations: 300,
+                                updateInterval: 50,
+                                onlyDynamicEdges: false,
+                                fit: true
                             },
+                            adaptiveTimestep: true,
+                            repulsion: {
+                                nodeDistance: 200,
+                                centralGravity: 0.1,
+                                springLength: 400,
+                                springConstant: 0.02,
+                                damping: 0.15
+                            }
                         },
                         interaction: {
                             hover: true,
@@ -761,11 +831,22 @@
                         this.hideNodeInfo();
                     });
 
+                    this.network.on("stabilizationProgress", (params) => {
+                        const progress = Math.round((params.iterations / params.total) * 100);
+                        const loadingText = document.querySelector('.loading-overlay div:last-child');
+                        if (loadingText) {
+                            loadingText.textContent = `Stabilizing network... ${progress}%`;
+                        }
+                    });
+
                     this.network.on("stabilizationIterationsDone", () => {
                         this.network.setOptions({
                             physics: { enabled: false },
                         });
                         this.network.fit();
+                        setTimeout(() => {
+                            this.hideLoading();
+                        }, 500);
                     });
                 }
 

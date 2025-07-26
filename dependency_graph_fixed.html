@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Graph - Fixed Version</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .network-container {
+            flex: 1;
+            position: relative;
+            background: #fff;
+        }
+
+        #network {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-project-diagram"></i> Dependency Graph Visualization</h1>
+        <p>Interactive network graph with proper node spacing</p>
+        
+        <div class="controls">
+            <button class="btn btn-primary" onclick="loadSampleData()">
+                <i class="fas fa-play"></i> Load Sample Data
+            </button>
+            <button class="btn btn-secondary" onclick="loadNetworkData()">
+                <i class="fas fa-file-code"></i> Load network-data.json
+            </button>
+            <button class="btn btn-success" onclick="resetView()">
+                <i class="fas fa-home"></i> Reset View
+            </button>
+            <button class="btn btn-secondary" onclick="exportImage()">
+                <i class="fas fa-download"></i> Export PNG
+            </button>
+        </div>
+        
+        <div id="status" class="status hidden"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="node-count">0</div>
+                    <div class="stat-label">Nodes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="edge-count">0</div>
+                    <div class="stat-label">Edges</div>
+                </div>
+            </div>
+
+            <h3><i class="fas fa-palette"></i> Legend</h3>
+            <div class="legend" id="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f7df1e;"></div>
+                    <span>JavaScript</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #61dafb;"></div>
+                    <span>React JSX</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3178c6;"></div>
+                    <span>TypeScript</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3776ab;"></div>
+                    <span>Python</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #dc3545;"></div>
+                    <span>External</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffc107;"></div>
+                    <span>Missing</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="network-container">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <div>Loading network...</div>
+            </div>
+            <div id="network"></div>
+        </div>
+    </div>
+
+    <script>
+        class DependencyGraphViewer {
+            constructor() {
+                this.network = null;
+                this.nodes = null;
+                this.edges = null;
+                this.container = document.getElementById('network');
+                this.init();
+            }
+
+            init() {
+                this.showStatus('Ready to load data', 'success');
+                this.hideLoading();
+            }
+
+            getNodeColor(type, external = false, missing = false) {
+                if (missing || type === 'missing') return '#ffc107';
+                if (external) return '#dc3545';
+                
+                const colors = {
+                    javascript: '#f7df1e',
+                    js: '#f7df1e',
+                    jsx: '#61dafb',
+                    ts: '#3178c6',
+                    tsx: '#61dafb',
+                    typescript: '#3178c6',
+                    python: '#3776ab',
+                    py: '#3776ab',
+                    unknown: '#6c757d'
+                };
+                
+                return colors[type] || colors.unknown;
+            }
+
+            processNodes(rawNodes) {
+                return rawNodes.map(node => {
+                    const isExternal = node.external || node.type === 'external';
+                    const isMissing = node.type === 'missing';
+                    
+                    return {
+                        id: node.id,
+                        label: node.label || node.name || `Node ${node.id}`,
+                        title: this.createNodeTooltip(node),
+                        color: {
+                            background: this.getNodeColor(node.type, isExternal, isMissing),
+                            border: isMissing ? '#dc3545' : '#fff',
+                            highlight: {
+                                background: this.getNodeColor(node.type, isExternal, isMissing),
+                                border: '#333'
+                            }
+                        },
+                        shape: isExternal ? 'box' : (isMissing ? 'triangle' : 'dot'),
+                        size: this.calculateNodeSize(node),
+                        font: {
+                            size: 12,
+                            color: '#333',
+                            strokeWidth: 2,
+                            strokeColor: '#fff'
+                        },
+                        borderWidth: 2,
+                        borderWidthSelected: 4
+                    };
+                });
+            }
+
+            calculateNodeSize(node) {
+                const baseSize = 25;
+                const isExternal = node.external || node.type === 'external';
+                const isMissing = node.type === 'missing';
+                
+                if (isMissing) return 15;
+                if (isExternal) return 20;
+                
+                // Scale based on dependencies or file size
+                const dependencies = node.dependencies || 0;
+                const sizeMultiplier = Math.min(1 + (dependencies * 0.1), 2);
+                
+                return Math.round(baseSize * sizeMultiplier);
+            }
+
+            createNodeTooltip(node) {
+                const lines = [
+                    `<strong>${node.label || node.name || 'Unknown'}</strong>`,
+                    `Path: ${node.path || 'N/A'}`,
+                    `Type: ${node.type || 'unknown'}`
+                ];
+                
+                if (node.dependencies) {
+                    lines.push(`Dependencies: ${node.dependencies}`);
+                }
+                
+                if (node.external) {
+                    lines.push('<em>External dependency</em>');
+                }
+                
+                if (node.type === 'missing') {
+                    lines.push('<em>Missing dependency</em>');
+                }
+                
+                return lines.join('<br>');
+            }
+
+            processEdges(rawEdges) {
+                return rawEdges.map((edge, index) => ({
+                    id: edge.id || `edge-${index}`,
+                    from: edge.from,
+                    to: edge.to,
+                    arrows: {
+                        to: {
+                            enabled: true,
+                            scaleFactor: 1,
+                            type: 'arrow'
+                        }
+                    },
+                    color: {
+                        color: '#848484',
+                        highlight: '#333333',
+                        hover: '#333333',
+                        opacity: 0.8
+                    },
+                    width: 2,
+                    smooth: {
+                        enabled: true,
+                        type: 'continuous',
+                        roundness: 0.2
+                    },
+                    length: 300
+                }));
+            }
+
+            createNetwork(data) {
+                this.showLoading();
+                
+                try {
+                    // Process data
+                    const processedNodes = this.processNodes(data.nodes);
+                    const processedEdges = this.processEdges(data.edges);
+                    
+                    this.nodes = new vis.DataSet(processedNodes);
+                    this.edges = new vis.DataSet(processedEdges);
+                    
+                    // Network options with proper spacing
+                    const options = {
+                        nodes: {
+                            borderWidth: 2,
+                            borderWidthSelected: 4,
+                            shadow: {
+                                enabled: true,
+                                color: 'rgba(0,0,0,0.2)',
+                                size: 8,
+                                x: 3,
+                                y: 3
+                            },
+                            margin: 25,
+                            scaling: {
+                                min: 15,
+                                max: 50
+                            }
+                        },
+                        edges: {
+                            smooth: {
+                                enabled: true,
+                                type: 'continuous',
+                                roundness: 0.2
+                            },
+                            width: 2,
+                            hoverWidth: 4,
+                            selectionWidth: 4,
+                            length: 350
+                        },
+                        physics: {
+                            enabled: true,
+                            barnesHut: {
+                                gravitationalConstant: -4000,
+                                centralGravity: 0.05,
+                                springLength: 450,
+                                springConstant: 0.01,
+                                damping: 0.2,
+                                avoidOverlap: 2
+                            },
+                            maxVelocity: 25,
+                            minVelocity: 0.1,
+                            solver: 'barnesHut',
+                            timestep: 0.5,
+                            stabilization: {
+                                iterations: 400,
+                                updateInterval: 50,
+                                onlyDynamicEdges: false,
+                                fit: true
+                            },
+                            adaptiveTimestep: true
+                        },
+                        interaction: {
+                            hover: true,
+                            hoverConnectedEdges: true,
+                            selectConnectedEdges: false,
+                            tooltipDelay: 200,
+                            zoomView: true,
+                            dragView: true
+                        },
+                        layout: {
+                            improvedLayout: true,
+                            clusterThreshold: 150,
+                            randomSeed: 42
+                        }
+                    };
+                    
+                    // Create network
+                    this.network = new vis.Network(this.container, {
+                        nodes: this.nodes,
+                        edges: this.edges
+                    }, options);
+                    
+                    // Event listeners
+                    this.setupEventListeners();
+                    
+                    // Update stats
+                    this.updateStats();
+                    
+                    this.showStatus(`Loaded ${processedNodes.length} nodes and ${processedEdges.length} edges`, 'success');
+                    
+                } catch (error) {
+                    this.showStatus(`Error creating network: ${error.message}`, 'error');
+                    console.error('Network creation error:', error);
+                }
+            }
+
+            setupEventListeners() {
+                let stabilizationProgress = 0;
+                
+                this.network.on('stabilizationProgress', (params) => {
+                    stabilizationProgress = Math.round((params.iterations / params.total) * 100);
+                    this.updateLoadingText(`Stabilizing network... ${stabilizationProgress}%`);
+                });
+                
+                this.network.on('stabilizationIterationsDone', () => {
+                    this.network.setOptions({ physics: { enabled: false } });
+                    setTimeout(() => {
+                        this.network.fit({
+                            animation: {
+                                duration: 1000,
+                                easingFunction: 'easeInOutQuad'
+                            }
+                        });
+                        this.hideLoading();
+                    }, 500);
+                });
+                
+                this.network.on('click', (params) => {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        const node = this.nodes.get(nodeId);
+                        this.showStatus(`Selected: ${node.label}`, 'success');
+                    }
+                });
+            }
+
+            updateStats() {
+                document.getElementById('node-count').textContent = this.nodes ? this.nodes.length : 0;
+                document.getElementById('edge-count').textContent = this.edges ? this.edges.length : 0;
+            }
+
+            showLoading() {
+                document.getElementById('loading').classList.remove('hidden');
+            }
+
+            hideLoading() {
+                document.getElementById('loading').classList.add('hidden');
+            }
+
+            updateLoadingText(text) {
+                const loadingDiv = document.querySelector('#loading div:last-child');
+                if (loadingDiv) {
+                    loadingDiv.textContent = text;
+                }
+            }
+
+            showStatus(message, type = 'success') {
+                const statusDiv = document.getElementById('status');
+                statusDiv.textContent = message;
+                statusDiv.className = `status ${type}`;
+                statusDiv.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
+            }
+
+            async loadNetworkData() {
+                try {
+                    this.showLoading();
+                    const response = await fetch('network-data.json');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    this.createNetwork(data);
+                    
+                } catch (error) {
+                    this.hideLoading();
+                    this.showStatus(`Failed to load network-data.json: ${error.message}`, 'error');
+                    console.error('Load error:', error);
+                }
+            }
+
+            loadSampleData() {
+                const sampleData = {
+                    nodes: [
+                        { id: 1, label: 'main.js', path: 'src/main.js', type: 'javascript', dependencies: 5 },
+                        { id: 2, label: 'utils.js', path: 'src/utils.js', type: 'javascript', dependencies: 2 },
+                        { id: 3, label: 'config.js', path: 'src/config.js', type: 'javascript', dependencies: 1 },
+                        { id: 4, label: 'api.js', path: 'src/api.js', type: 'javascript', dependencies: 3 },
+                        { id: 5, label: 'component.jsx', path: 'src/component.jsx', type: 'jsx', dependencies: 2 },
+                        { id: 6, label: 'types.ts', path: 'src/types.ts', type: 'typescript', dependencies: 0 },
+                        { id: 7, label: 'helper.py', path: 'scripts/helper.py', type: 'python', dependencies: 1 },
+                        { id: 8, label: 'lodash', path: 'node_modules/lodash', type: 'external', external: true },
+                        { id: 9, label: 'missing-dep', path: 'unknown', type: 'missing' },
+                        { id: 10, label: 'database.js', path: 'src/database.js', type: 'javascript', dependencies: 4 }
+                    ],
+                    edges: [
+                        { from: 1, to: 2 }, { from: 1, to: 3 }, { from: 1, to: 4 },
+                        { from: 2, to: 8 }, { from: 4, to: 5 }, { from: 5, to: 6 },
+                        { from: 3, to: 7 }, { from: 4, to: 9 }, { from: 1, to: 10 },
+                        { from: 10, to: 8 }, { from: 10, to: 2 }
+                    ]
+                };
+                
+                this.createNetwork(sampleData);
+            }
+
+            resetView() {
+                if (this.network) {
+                    this.network.fit({
+                        animation: {
+                            duration: 1000,
+                            easingFunction: 'easeInOutQuad'
+                        }
+                    });
+                    this.showStatus('View reset', 'success');
+                }
+            }
+
+            exportImage() {
+                if (this.network) {
+                    const canvas = this.network.canvas.frame.canvas;
+                    const link = document.createElement('a');
+                    link.download = 'dependency-graph.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    this.showStatus('Image exported', 'success');
+                }
+            }
+        }
+
+        // Global functions for buttons
+        let viewer;
+
+        function loadSampleData() {
+            viewer.loadSampleData();
+        }
+
+        function loadNetworkData() {
+            viewer.loadNetworkData();
+        }
+
+        function resetView() {
+            viewer.resetView();
+        }
+
+        function exportImage() {
+            viewer.exportImage();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            viewer = new DependencyGraphViewer();
+        });
+    </script>
+</body>
+</html>

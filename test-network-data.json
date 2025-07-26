@@ -1,0 +1,621 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "label": "settings.js",
+      "path": "config/settings.js",
+      "type": "javascript",
+      "color": {
+        "background": "#f7df1e",
+        "border": "#c4ac00",
+        "highlight": {
+          "background": "#ffff51",
+          "border": "#f7df1e"
+        }
+      },
+      "shape": "dot",
+      "size": 7804,
+      "font": {
+        "size": 12,
+        "color": "#333333"
+      },
+      "fullPath": "example/config/settings.js",
+      "extension": ".js",
+      "dependencies": 1,
+      "parser": "JavaScriptParser"
+    },
+    {
+      "id": 1,
+      "label": "main.js",
+      "path": "main.js",
+      "type": "javascript",
+      "color": {
+        "background": "#f7df1e",
+        "border": "#c4ac00",
+        "highlight": {
+          "background": "#ffff51",
+          "border": "#f7df1e"
+        }
+      },
+      "shape": "dot",
+      "size": 3378,
+      "font": {
+        "size": 12,
+        "color": "#333333"
+      },
+      "fullPath": "example/main.js",
+      "extension": ".js",
+      "dependencies": 10,
+      "parser": "JavaScriptParser"
+    },
+    {
+      "id": 2,
+      "label": "error-handler.js",
+      "path": "utils/error-handler.js",
+      "type": "javascript",
+      "color": {
+        "background": "#f7df1e",
+        "border": "#c4ac00",
+        "highlight": {
+          "background": "#ffff51",
+          "border": "#f7df1e"
+        }
+      },
+      "shape": "dot",
+      "size": 13585,
+      "font": {
+        "size": 12,
+        "color": "#333333"
+      },
+      "fullPath": "example/utils/error-handler.js",
+      "extension": ".js",
+      "dependencies": 1,
+      "parser": "JavaScriptParser"
+    },
+    {
+      "id": 3,
+      "label": "formatter.js",
+      "path": "utils/formatter.js",
+      "type": "javascript",
+      "color": {
+        "background": "#f7df1e",
+        "border": "#c4ac00",
+        "highlight": {
+          "background": "#ffff51",
+          "border": "#f7df1e"
+        }
+      },
+      "shape": "dot",
+      "size": 8350,
+      "font": {
+        "size": 12,
+        "color": "#333333"
+      },
+      "fullPath": "example/utils/formatter.js",
+      "extension": ".js",
+      "dependencies": 1,
+      "parser": "JavaScriptParser"
+    },
+    {
+      "id": 4,
+      "label": "logger.js",
+      "path": "utils/logger.js",
+      "type": "javascript",
+      "color": {
+        "background": "#f7df1e",
+        "border": "#c4ac00",
+        "highlight": {
+          "background": "#ffff51",
+          "border": "#f7df1e"
+        }
+      },
+      "shape": "dot",
+      "size": 9103,
+      "font": {
+        "size": 12,
+        "color": "#333333"
+      },
+      "fullPath": "example/utils/logger.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "JavaScriptParser"
+    },
+    {
+      "id": 5,
+      "label": "validator.js",
+      "path": "utils/validator.js",
+      "type": "javascript",
+      "color": {
+        "background": "#f7df1e",
+        "border": "#c4ac00",
+        "highlight": {
+          "background": "#ffff51",
+          "border": "#f7df1e"
+        }
+      },
+      "shape": "dot",
+      "size": 6496,
+      "font": {
+        "size": 12,
+        "color": "#333333"
+      },
+      "fullPath": "example/utils/validator.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "JavaScriptParser"
+    },
+    {
+      "id": 6,
+      "label": "validator.js",
+      "path": "utils/validator.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/utils/validator.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    },
+    {
+      "id": 7,
+      "label": "formatter.js",
+      "path": "utils/formatter.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/utils/formatter.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    },
+    {
+      "id": 8,
+      "label": "logger.js",
+      "path": "utils/logger.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/utils/logger.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    },
+    {
+      "id": 9,
+      "label": "manager.js",
+      "path": "database/manager.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/database/manager.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    },
+    {
+      "id": 10,
+      "label": "client.js",
+      "path": "api/client.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/api/client.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    },
+    {
+      "id": 11,
+      "label": "settings.js",
+      "path": "config/settings.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/config/settings.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    },
+    {
+      "id": 12,
+      "label": "error-handler.js",
+      "path": "utils/error-handler.js",
+      "type": "missing",
+      "color": {
+        "background": "#f44336",
+        "border": "#c11003",
+        "highlight": {
+          "background": "#ff7669",
+          "border": "#f44336"
+        }
+      },
+      "shape": "triangleDown",
+      "size": 0,
+      "font": {
+        "size": 12,
+        "color": "#666666"
+      },
+      "opacity": 0.5,
+      "fullPath": "/home/C/Dev/javascript/repo_graph/example/utils/error-handler.js",
+      "extension": ".js",
+      "dependencies": 0,
+      "parser": "missing",
+      "isMissing": true
+    }
+  ],
+  "edges": [
+    {
+      "from": 1,
+      "to": 6,
+      "label": "./utils/validator.js",
+      "type": "local",
+      "importType": "named",
+      "line": 6,
+      "column": 1,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 1,
+      "to": 7,
+      "label": "./utils/formatter.js",
+      "type": "local",
+      "importType": "named",
+      "line": 7,
+      "column": 1,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 1,
+      "to": 8,
+      "label": "./utils/logger.js",
+      "type": "local",
+      "importType": "default",
+      "line": 8,
+      "column": 1,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 1,
+      "to": 9,
+      "label": "./database/manager.js",
+      "type": "local",
+      "importType": "named",
+      "line": 9,
+      "column": 1,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 1,
+      "to": 10,
+      "label": "./api/client.js",
+      "type": "local",
+      "importType": "named",
+      "line": 10,
+      "column": 1,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 1,
+      "to": 11,
+      "label": "./config/settings.js",
+      "type": "local",
+      "importType": "local",
+      "line": 13,
+      "column": 16,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 1,
+      "to": 12,
+      "label": "./utils/error-handler.js",
+      "type": "local",
+      "importType": "local",
+      "line": 14,
+      "column": 26,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 2,
+      "to": 8,
+      "label": "./logger.js",
+      "type": "local",
+      "importType": "local",
+      "line": 4,
+      "column": 16,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    },
+    {
+      "from": 3,
+      "to": 6,
+      "label": "./validator.js",
+      "type": "local",
+      "importType": "named",
+      "line": 3,
+      "column": 1,
+      "color": {
+        "color": "#666666",
+        "highlight": "#666666",
+        "hover": "#666666"
+      },
+      "arrows": {
+        "to": {
+          "enabled": true,
+          "scaleFactor": 1,
+          "type": "arrow"
+        }
+      },
+      "width": 1,
+      "smooth": {
+        "type": "continuous"
+      }
+    }
+  ],
+  "metadata": {
+    "timestamp": "2025-07-26T22:53:22.748Z",
+    "version": "2.0.0",
+    "analysisTime": 0,
+    "repositoryPath": "./example",
+    "config": {
+      "includeExternal": false,
+      "excludePatterns": [
+        "node_modules/**",
+        ".git/**",
+        "dist/**",
+        "build/**",
+        "**/*.min.js",
+        "coverage/**",
+        ".nyc_output/**"
+      ],
+      "includeExtensions": [
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".py"
+      ]
+    },
+    "stats": {
+      "filesScanned": 0,
+      "filesProcessed": 0,
+      "dependenciesFound": 0,
+      "errorCount": 0
+    },
+    "metrics": {
+      "totalNodes": 13,
+      "totalEdges": 9,
+      "nodeTypes": {
+        "javascript": 6,
+        "missing": 7
+      },
+      "circularDependencies": 0,
+      "maxInDegree": 2,
+      "maxOutDegree": 7,
+      "mostDependent": [
+        {
+          "id": 6,
+          "label": "validator.js",
+          "path": "utils/validator.js"
+        },
+        {
+          "id": 8,
+          "label": "logger.js",
+          "path": "utils/logger.js"
+        }
+      ],
+      "mostDependedOn": [
+        {
+          "id": 1,
+          "label": "main.js",
+          "path": "main.js"
+        }
+      ],
+      "isolatedNodes": 3,
+      "averageInDegree": 0.6923076923076923,
+      "averageOutDegree": 0.6923076923076923
+    }
+  }
+}
