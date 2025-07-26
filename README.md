@@ -6,18 +6,57 @@ A powerful tool for analyzing and visualizing code dependencies in JavaScript an
 ![Node.js](https://img.shields.io/badge/Node.js-14%2B-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-## Features
+## ✨ Features
 
 🔍 **Multi-language Support**: Analyze JavaScript and Python codebases  
-📊 **Interactive Visualization**: Beautiful network graphs with vis.js  
+📊 **Interactive Visualization**: Beautiful network graphs with proper node spacing  
 🎯 **Smart Path Resolution**: Handles relative imports and module paths  
 ⚡ **Fast Analysis**: Efficient file parsing and dependency extraction  
-🎨 **Customizable Display**: Configurable graph physics and styling  
+🎨 **Fixed Node Spacing**: Nodes no longer collapse onto each other  
 📱 **Responsive Design**: Works on desktop and mobile browsers  
+📁 **Multiple Usage Modes**: Standalone HTML or full server mode
 
-## Installation
+## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Standalone (No Server Required)
+1. Open `index.html` directly in your browser
+2. Click "Load Sample Data" to see the visualization
+3. Upload your own JSON files using "Upload JSON File"
+
+### Option 2: Full Server Mode
+```bash
+# Install dependencies
+npm install
+
+# Start the server
+npm run server
+
+# Open browser
+open http://localhost:3000
+```
+
+## 📁 Project Structure
+
+```
+├── public/                 # Web interface
+│   ├── index.html         # Main visualization page
+│   └── js/
+│       └── dependency-graph.js
+├── src/                   # Core analysis engine
+│   ├── analyzer/          # Dependency analysis logic
+│   ├── parsers/           # Language-specific parsers
+│   ├── utils/             # Utility functions
+│   └── index.js
+├── examples/              # Sample data and projects
+│   ├── javascript/        # JavaScript example project
+│   ├── python/           # Python example project
+│   ├── network-data.json # Sample network data
+│   └── test-network-data.json
+├── analyze_dependencies.js # CLI tool
+├── server.js             # Express server
+└── package.json
+
+## 🛠️ Installation
 - Node.js 14.0 or higher
 - Python 3.6+ (for serving the visualization)
 

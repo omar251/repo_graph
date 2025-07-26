@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Graph Visualization</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .network-container {
+            flex: 1;
+            position: relative;
+            background: #fff;
+        }
+
+        #network {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #0d47a1;
+        }
+
+        .instructions h4 {
+            margin-bottom: 10px;
+            color: #1565c0;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-project-diagram"></i> Repository Dependency Graph</h1>
+        <p>Interactive network visualization with proper node spacing</p>
+        
+        <div class="controls">
+            <button class="btn btn-primary" onclick="loadSampleData()">
+                <i class="fas fa-play"></i> Load Sample Data
+            </button>
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".json" onchange="loadFileData(event)">
+                <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-file-upload"></i> Upload JSON File
+                </button>
+            </div>
+            <button class="btn btn-secondary" onclick="analyzeRepository()">
+                <i class="fas fa-search"></i> Analyze Repository
+            </button>
+            <button class="btn btn-success" onclick="resetView()">
+                <i class="fas fa-home"></i> Reset View
+            </button>
+            <button class="btn btn-secondary" onclick="exportImage()">
+                <i class="fas fa-download"></i> Export PNG
+            </button>
+        </div>
+        
+        <div class="instructions">
+            <h4><i class="fas fa-info-circle"></i> How to Use:</h4>
+            <ul>
+                <li><strong>Load Sample Data:</strong> See the graph with demo data</li>
+                <li><strong>Upload JSON File:</strong> Load your own network-data.json file</li>
+                <li><strong>Analyze Repository:</strong> Use the backend to analyze a repository</li>
+                <li><strong>Server Mode:</strong> Run <code>node server.js</code> for full functionality</li>
+            </ul>
+        </div>
+        
+        <div id="status" class="status hidden"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="node-count">0</div>
+                    <div class="stat-label">Nodes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="edge-count">0</div>
+                    <div class="stat-label">Edges</div>
+                </div>
+            </div>
+
+            <h3><i class="fas fa-palette"></i> Legend</h3>
+            <div class="legend" id="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f7df1e;"></div>
+                    <span>JavaScript</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #61dafb;"></div>
+                    <span>React JSX</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3178c6;"></div>
+                    <span>TypeScript</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3776ab;"></div>
+                    <span>Python</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #dc3545;"></div>
+                    <span>External</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffc107;"></div>
+                    <span>Missing</span>
+                </div>
+            </div>
+
+            <h3><i class="fas fa-cogs"></i> Current Data</h3>
+            <div id="data-info" style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e9ecef; font-size: 0.9rem;">
+                No data loaded
+            </div>
+        </div>
+
+        <div class="network-container">
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <div>Loading network...</div>
+            </div>
+            <div id="network"></div>
+        </div>
+    </div>
+
+    <script src="js/dependency-graph.js"></script>
+</body>
+</html>

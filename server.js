@@ -4,7 +4,7 @@ const { main } = require('./analyze_dependencies.js');
 
 const app = express();
 app.use(express.json());
-app.use(express.static('.'));
+app.use(express.static('public'));
 
 app.post('/analyze', async (req, res) => {
     try {
@@ -50,7 +50,7 @@ app.post('/analyze', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dependency_graph.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(3000, () => {
