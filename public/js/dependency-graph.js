@@ -62,10 +62,14 @@ class DependencyGraphViewer {
             typescript: '#3178c6',
             python: '#3776ab',
             py: '#3776ab',
+            css: '#e34c26',
+            html: '#e34f26',
+            json: '#f39c12',
             unknown: '#6c757d'
         };
         
-        return colors[type] || colors.unknown;
+        const normalizedType = type.toLowerCase();
+        return colors[normalizedType] || colors[type] || colors.unknown;
     }
 
     processNodes(rawNodes) {
@@ -250,8 +254,9 @@ class DependencyGraphViewer {
             // Event listeners
             this.setupEventListeners();
             
-            // Update stats
+            // Update stats and legend
             this.updateStats();
+            this.updateLegend(data.nodes); // Use original data, not processed nodes
             
             this.showStatus(`✅ Loaded ${processedNodes.length} nodes and ${processedEdges.length} edges`, 'success');
             
@@ -295,6 +300,85 @@ class DependencyGraphViewer {
     updateStats() {
         document.getElementById('node-count').textContent = this.nodes ? this.nodes.length : 0;
         document.getElementById('edge-count').textContent = this.edges ? this.edges.length : 0;
+    }
+
+    updateLegend(nodes) {
+        const legendContainer = document.getElementById('legend');
+        if (!legendContainer) {
+            console.error('Legend container not found!');
+            return;
+        }
+        
+        const typeMap = new Map();
+        
+        // Count node types
+        nodes.forEach(node => {
+            const type = node.type || 'unknown';
+            const isExternal = node.external === true;
+            const isMissing = node.type === 'missing';
+            
+            let displayType;
+            if (isMissing) {
+                displayType = 'missing';
+            } else if (isExternal) {
+                displayType = 'external';
+            } else {
+                displayType = type;
+            }
+            
+            if (!typeMap.has(displayType)) {
+                typeMap.set(displayType, {
+                    count: 0,
+                    color: this.getNodeColor(type, isExternal, isMissing),
+                    label: this.getTypeLabel(displayType)
+                });
+            }
+            typeMap.get(displayType).count++;
+        });
+        
+        // Clear and rebuild legend
+        legendContainer.innerHTML = '';
+        
+        if (typeMap.size === 0) {
+            legendContainer.innerHTML = '<div class="legend-item"><span style="color: var(--text-muted);">No data available</span></div>';
+            return;
+        }
+        
+        // Sort by count (descending)
+        const sortedTypes = Array.from(typeMap.entries()).sort((a, b) => b[1].count - a[1].count);
+        
+        sortedTypes.forEach(([type, info]) => {
+            const legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+            legendItem.innerHTML = `
+                <div class="legend-color" style="background: ${info.color}; border: 2px solid var(--border-primary);"></div>
+                <span>${info.label} (${info.count})</span>
+            `;
+            legendContainer.appendChild(legendItem);
+        });
+    }
+
+    getTypeLabel(type) {
+        const labels = {
+            javascript: 'JavaScript',
+            js: 'JavaScript', 
+            jsx: 'React JSX',
+            ts: 'TypeScript',
+            tsx: 'React TSX',
+            typescript: 'TypeScript',
+            python: 'Python',
+            py: 'Python',
+            css: 'CSS',
+            html: 'HTML',
+            external: 'External',
+            missing: 'Missing',
+            config: 'Config',
+            json: 'JSON',
+            unknown: 'Other'
+        };
+        
+        const normalizedType = type.toLowerCase();
+        return labels[normalizedType] || labels[type] || (type.charAt(0).toUpperCase() + type.slice(1));
     }
 
     updateDataInfo(info) {
@@ -484,19 +568,19 @@ class DependencyGraphViewer {
     loadSampleData() {
         const sampleData = {
             nodes: [
-                { id: 1, label: 'main.js', path: 'src/main.js', type: 'javascript', dependencies: 5 },
-                { id: 2, label: 'utils.js', path: 'src/utils.js', type: 'javascript', dependencies: 2 },
-                { id: 3, label: 'config.js', path: 'src/config.js', type: 'javascript', dependencies: 1 },
-                { id: 4, label: 'api.js', path: 'src/api.js', type: 'javascript', dependencies: 3 },
+                { id: 1, label: 'main.js', path: 'src/main.js', type: 'js', dependencies: 5 },
+                { id: 2, label: 'utils.js', path: 'src/utils.js', type: 'js', dependencies: 2 },
+                { id: 3, label: 'config.js', path: 'src/config.js', type: 'js', dependencies: 1 },
+                { id: 4, label: 'api.js', path: 'src/api.js', type: 'js', dependencies: 3 },
                 { id: 5, label: 'component.jsx', path: 'src/component.jsx', type: 'jsx', dependencies: 2 },
-                { id: 6, label: 'types.ts', path: 'src/types.ts', type: 'typescript', dependencies: 0 },
-                { id: 7, label: 'helper.py', path: 'scripts/helper.py', type: 'python', dependencies: 1 },
+                { id: 6, label: 'types.ts', path: 'src/types.ts', type: 'ts', dependencies: 0 },
+                { id: 7, label: 'helper.py', path: 'scripts/helper.py', type: 'py', dependencies: 1 },
                 { id: 8, label: 'lodash', path: 'node_modules/lodash', type: 'external', external: true },
                 { id: 9, label: 'missing-dep', path: 'unknown', type: 'missing' },
-                { id: 10, label: 'database.js', path: 'src/database.js', type: 'javascript', dependencies: 4 },
-                { id: 11, label: 'auth.js', path: 'src/auth.js', type: 'javascript', dependencies: 2 },
-                { id: 12, label: 'router.js', path: 'src/router.js', type: 'javascript', dependencies: 3 },
-                { id: 13, label: 'styles.css', path: 'src/styles.css', type: 'unknown', dependencies: 0 },
+                { id: 10, label: 'database.js', path: 'src/database.js', type: 'js', dependencies: 4 },
+                { id: 11, label: 'auth.js', path: 'src/auth.js', type: 'js', dependencies: 2 },
+                { id: 12, label: 'router.js', path: 'src/router.js', type: 'js', dependencies: 3 },
+                { id: 13, label: 'styles.css', path: 'src/styles.css', type: 'css', dependencies: 0 },
                 { id: 14, label: 'react', path: 'node_modules/react', type: 'external', external: true },
                 { id: 15, label: 'express', path: 'node_modules/express', type: 'external', external: true }
             ],
