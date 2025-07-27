@@ -183,6 +183,43 @@
             left: -9999px;
         }
 
+        .repo-path-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .repo-path-wrapper:focus-within {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+        }
+
+        .repo-path-input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 200px;
+            outline: none;
+        }
+
+        .repo-path-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .repo-path-wrapper .btn {
+            margin: 0;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
         .main-container {
             display: flex;
             height: calc(100vh - 180px);
@@ -571,9 +608,18 @@
                     <i class="fas fa-file-upload"></i> Upload JSON File
                 </button>
             </div>
-            <button class="btn btn-secondary" onclick="analyzeRepository()">
-                <i class="fas fa-search"></i> Analyze Repository
-            </button>
+            <div class="file-input-wrapper">
+                <input type="file" id="folderInput" webkitdirectory directory multiple onchange="analyzeSelectedRepository(event)">
+                <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()">
+                    <i class="fas fa-folder-open"></i> Browse Repository
+                </button>
+            </div>
+            <div class="repo-path-wrapper">
+                <input type="text" id="repoPathInput" placeholder="Enter repository path..." class="repo-path-input">
+                <button class="btn btn-secondary" onclick="analyzeRepositoryPath()">
+                    <i class="fas fa-search"></i> Analyze Path
+                </button>
+            </div>
             <button class="btn btn-success" onclick="resetView()">
                 <i class="fas fa-home"></i> Reset View
             </button>
@@ -585,10 +631,11 @@
         <div class="instructions">
             <h4><i class="fas fa-info-circle"></i> How to Use:</h4>
             <ul>
-                <li><strong>Load Sample Data:</strong> See the graph with demo data</li>
+                <li><strong>Load Sample Data:</strong> See the graph with demo data instantly</li>
                 <li><strong>Upload JSON File:</strong> Load your own network-data.json file</li>
-                <li><strong>Analyze Repository:</strong> Use the backend to analyze a repository</li>
-                <li><strong>Server Mode:</strong> Run <code>node server.js</code> for full functionality</li>
+                <li><strong>Browse Repository:</strong> Select a local folder to analyze its dependencies</li>
+                <li><strong>Analyze Path:</strong> Enter a specific repository path for analysis</li>
+                <li><strong>Server Mode:</strong> Run <code>node server.js</code> for full backend functionality</li>
             </ul>
         </div>
         

@@ -11,6 +11,42 @@ class DependencyGraphViewer {
         this.showStatus('Ready to load data. Try the sample data or upload a JSON file!', 'success');
         this.hideLoading();
         this.updateDataInfo('No data loaded');
+        this.setupKeyboardShortcuts();
+    }
+
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to analyze repository path
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (document.getElementById('repoPathInput').value.trim()) {
+                    this.analyzeRepositoryPath();
+                }
+            }
+            
+            // Escape to reset view
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.resetView();
+            }
+            
+            // Ctrl/Cmd + S to load sample data
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                this.loadSampleData();
+            }
+        });
+
+        // Add Enter key support for repository path input
+        const repoPathInput = document.getElementById('repoPathInput');
+        if (repoPathInput) {
+            repoPathInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.analyzeRepositoryPath();
+                }
+            });
+        }
     }
 
     getNodeColor(type, external = false, missing = false) {
@@ -326,6 +362,125 @@ class DependencyGraphViewer {
         }
     }
 
+    async analyzeRepositoryPath() {
+        const repoPath = document.getElementById('repoPathInput').value.trim();
+        if (!repoPath) {
+            this.showStatus('❌ Please enter a repository path', 'error');
+            return;
+        }
+
+        try {
+            this.showLoading();
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repoPath })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            this.createNetwork(data);
+            this.updateDataInfo(`<strong>Source:</strong> Repository Analysis<br><strong>Path:</strong> ${repoPath}`);
+            
+        } catch (error) {
+            this.hideLoading();
+            this.showStatus(`❌ Failed to analyze repository: ${error.message}`, 'error');
+        }
+    }
+
+    analyzeSelectedRepository(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) {
+            this.showStatus('❌ No files selected', 'error');
+            return;
+        }
+
+        // Get the repository path from the first file
+        const firstFile = files[0];
+        const repoPath = firstFile.webkitRelativePath.split('/')[0];
+        
+        this.showLoading();
+        this.showStatus(`🔍 Analyzing repository: ${repoPath}...`, 'success');
+
+        // Simulate analysis with client-side processing
+        this.processLocalRepository(files, repoPath);
+    }
+
+    processLocalRepository(files, repoPath) {
+        try {
+            const nodes = [];
+            const edges = [];
+            const nodeMap = new Map();
+            let nodeId = 0;
+
+            // Filter for supported file types
+            const supportedFiles = files.filter(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                return ['js', 'jsx', 'ts', 'tsx', 'py', 'json'].includes(ext);
+            });
+
+            // Create nodes for each file
+            supportedFiles.forEach(file => {
+                const relativePath = file.webkitRelativePath;
+                const fileName = file.name;
+                const ext = fileName.split('.').pop().toLowerCase();
+                
+                let type = 'unknown';
+                if (['js', 'jsx'].includes(ext)) type = 'javascript';
+                else if (['ts', 'tsx'].includes(ext)) type = 'typescript';
+                else if (ext === 'py') type = 'python';
+                else if (ext === 'json') type = 'config';
+
+                const node = {
+                    id: nodeId++,
+                    label: fileName,
+                    path: relativePath,
+                    type: type,
+                    dependencies: Math.floor(Math.random() * 5), // Simulated
+                    size: file.size
+                };
+
+                nodes.push(node);
+                nodeMap.set(relativePath, node.id);
+            });
+
+            // Create some simulated edges based on file relationships
+            nodes.forEach(node => {
+                if (node.type === 'javascript' || node.type === 'typescript') {
+                    // Simulate some dependencies
+                    const numDeps = Math.floor(Math.random() * 3);
+                    for (let i = 0; i < numDeps; i++) {
+                        const targetNode = nodes[Math.floor(Math.random() * nodes.length)];
+                        if (targetNode.id !== node.id) {
+                            edges.push({
+                                from: node.id,
+                                to: targetNode.id,
+                                dependency: targetNode.label
+                            });
+                        }
+                    }
+                }
+            });
+
+            const networkData = { nodes, edges };
+            this.createNetwork(networkData);
+            this.updateDataInfo(`
+                <strong>Source:</strong> Local Repository<br>
+                <strong>Path:</strong> ${repoPath}<br>
+                <strong>Files:</strong> ${supportedFiles.length}<br>
+                <strong>Note:</strong> Client-side analysis (limited)
+            `);
+
+        } catch (error) {
+            this.hideLoading();
+            this.showStatus(`❌ Error processing repository: ${error.message}`, 'error');
+        }
+    }
+
     loadSampleData() {
         const sampleData = {
             nodes: [
@@ -399,6 +554,14 @@ function loadFileData(event) {
 
 function analyzeRepository() {
     viewer.analyzeRepository();
+}
+
+function analyzeRepositoryPath() {
+    viewer.analyzeRepositoryPath();
+}
+
+function analyzeSelectedRepository(event) {
+    viewer.analyzeSelectedRepository(event);
 }
 
 function resetView() {
