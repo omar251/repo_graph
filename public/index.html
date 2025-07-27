@@ -559,6 +559,85 @@
             scrollbar-color: var(--border-primary) var(--bg-secondary);
         }
 
+        /* Physics Controls */
+        .physics-controls {
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .fluidity-buttons {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .fluidity-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .fluidity-btn:hover {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+        }
+
+        .fluidity-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+        }
+
+        .physics-toggle-btn {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .physics-toggle-btn:hover {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        .physics-toggle-btn.paused {
+            background: var(--accent-red);
+            color: white;
+            border-color: var(--accent-red);
+        }
+
         /* Animation for page load */
         @keyframes fadeInUp {
             from {
@@ -742,6 +821,21 @@
                     <!-- Dynamic legend will be populated here -->
                 </div>
 
+                <h3><i class="fas fa-sliders-h"></i> Physics</h3>
+                <div class="physics-controls">
+                    <div class="control-group">
+                        <label>Fluidity Level:</label>
+                        <div class="fluidity-buttons">
+                            <button class="fluidity-btn active" onclick="setFluidity('low')">Low</button>
+                            <button class="fluidity-btn" onclick="setFluidity('medium')">Med</button>
+                            <button class="fluidity-btn" onclick="setFluidity('high')">High</button>
+                        </div>
+                    </div>
+                    <button class="physics-toggle-btn" onclick="togglePhysics()">
+                        <i class="fas fa-pause"></i> Pause Physics
+                    </button>
+                </div>
+
                 <h3><i class="fas fa-info"></i> Data</h3>
                 <div id="data-info" style="background: var(--bg-secondary) !important; color: var(--text-secondary) !important; border: 1px solid var(--border-primary) !important; border-radius: 8px !important; padding: 12px !important; font-size: 0.85rem !important; line-height: 1.4 !important;">
                     No data loaded
@@ -778,6 +872,38 @@
                 icon.className = 'fas fa-chevron-right';
             } else {
                 icon.className = 'fas fa-chevron-left';
+            }
+        }
+
+        function setFluidity(level) {
+            if (viewer) {
+                viewer.adjustFluidity(level);
+                
+                // Update button states
+                document.querySelectorAll('.fluidity-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            }
+        }
+
+        function togglePhysics() {
+            if (viewer) {
+                viewer.togglePhysics();
+                
+                // Update button state
+                const btn = document.querySelector('.physics-toggle-btn');
+                const icon = btn.querySelector('i');
+                
+                if (btn.classList.contains('paused')) {
+                    btn.classList.remove('paused');
+                    icon.className = 'fas fa-pause';
+                    btn.innerHTML = '<i class="fas fa-pause"></i> Pause Physics';
+                } else {
+                    btn.classList.add('paused');
+                    icon.className = 'fas fa-play';
+                    btn.innerHTML = '<i class="fas fa-play"></i> Resume Physics';
+                }
             }
         }
 

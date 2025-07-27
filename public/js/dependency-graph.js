@@ -211,24 +211,33 @@ class DependencyGraphViewer {
                 physics: {
                     enabled: true,
                     barnesHut: {
-                        gravitationalConstant: -5000,
-                        centralGravity: 0.03,
-                        springLength: 500,
-                        springConstant: 0.008,
-                        damping: 0.25,
-                        avoidOverlap: 2.5
+                        gravitationalConstant: -3000,
+                        centralGravity: 0.1,
+                        springLength: 400,
+                        springConstant: 0.015,
+                        damping: 0.15,
+                        avoidOverlap: 1.5
                     },
-                    maxVelocity: 20,
-                    minVelocity: 0.1,
+                    maxVelocity: 30,
+                    minVelocity: 0.75,
                     solver: 'barnesHut',
-                    timestep: 0.5,
+                    timestep: 0.35,
                     stabilization: {
-                        iterations: 500,
-                        updateInterval: 50,
+                        iterations: 300,
+                        updateInterval: 25,
                         onlyDynamicEdges: false,
                         fit: true
                     },
-                    adaptiveTimestep: true
+                    adaptiveTimestep: true,
+                    wind: { x: 0, y: 0 },
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springConstant: 0.08,
+                        springLength: 100,
+                        damping: 0.4,
+                        avoidOverlap: 0.5
+                    }
                 },
                 interaction: {
                     hover: true,
@@ -276,7 +285,23 @@ class DependencyGraphViewer {
         });
         
         this.network.on('stabilizationIterationsDone', () => {
-            this.network.setOptions({ physics: { enabled: false } });
+            // Keep physics enabled for fluidity but reduce forces
+            this.network.setOptions({ 
+                physics: { 
+                    enabled: true,
+                    barnesHut: {
+                        gravitationalConstant: -1500,
+                        centralGravity: 0.05,
+                        springLength: 350,
+                        springConstant: 0.01,
+                        damping: 0.3,
+                        avoidOverlap: 1.2
+                    },
+                    maxVelocity: 15,
+                    minVelocity: 0.5
+                } 
+            });
+            
             setTimeout(() => {
                 this.network.fit({
                     animation: {
@@ -293,7 +318,19 @@ class DependencyGraphViewer {
                 const nodeId = params.nodes[0];
                 const node = this.nodes.get(nodeId);
                 this.showStatus(`Selected: ${node.label}`, 'success');
+                
+                // Add attraction effect on click
+                this.addAttractionPulse(nodeId);
             }
+        });
+
+        // Add mouse interaction for fluid effects
+        this.network.on('hoverNode', (params) => {
+            this.addNodeHoverEffect(params.node);
+        });
+
+        this.network.on('blurNode', (params) => {
+            this.removeNodeHoverEffect(params.node);
         });
     }
 
@@ -619,6 +656,121 @@ class DependencyGraphViewer {
             link.click();
             this.showStatus('📸 Image exported', 'success');
         }
+    }
+
+    addAttractionPulse(nodeId) {
+        // Temporarily increase attraction to clicked node
+        const connectedNodes = this.network.getConnectedNodes(nodeId);
+        
+        // Create temporary attractive force
+        setTimeout(() => {
+            if (this.network) {
+                this.network.setOptions({
+                    physics: {
+                        barnesHut: {
+                            gravitationalConstant: -2500, // Stronger attraction
+                            centralGravity: 0.2,
+                            springLength: 300,
+                            springConstant: 0.02,
+                            damping: 0.2
+                        },
+                        maxVelocity: 25
+                    }
+                });
+                
+                // Reset after pulse
+                setTimeout(() => {
+                    if (this.network) {
+                        this.network.setOptions({
+                            physics: {
+                                barnesHut: {
+                                    gravitationalConstant: -1500,
+                                    centralGravity: 0.05,
+                                    springLength: 350,
+                                    springConstant: 0.01,
+                                    damping: 0.3
+                                },
+                                maxVelocity: 15
+                            }
+                        });
+                    }
+                }, 1000);
+            }
+        }, 100);
+    }
+
+    addNodeHoverEffect(nodeId) {
+        // Subtle attraction effect on hover
+        const node = this.nodes.get(nodeId);
+        if (node) {
+            this.nodes.update({
+                id: nodeId,
+                size: node.size * 1.2,
+                borderWidth: 4
+            });
+        }
+    }
+
+    removeNodeHoverEffect(nodeId) {
+        // Reset node size on hover out
+        const node = this.nodes.get(nodeId);
+        if (node) {
+            this.nodes.update({
+                id: nodeId,
+                size: node.size / 1.2,
+                borderWidth: 2
+            });
+        }
+    }
+
+    togglePhysics() {
+        const currentPhysics = this.network.physics.physicsEnabled;
+        this.network.setOptions({
+            physics: { enabled: !currentPhysics }
+        });
+        
+        const status = currentPhysics ? 'Physics disabled' : 'Physics enabled';
+        this.showStatus(`⚡ ${status}`, 'success');
+    }
+
+    adjustFluidity(level) {
+        // level: 'low', 'medium', 'high'
+        const configs = {
+            low: {
+                gravitationalConstant: -1000,
+                centralGravity: 0.02,
+                springLength: 400,
+                springConstant: 0.005,
+                damping: 0.5,
+                maxVelocity: 10
+            },
+            medium: {
+                gravitationalConstant: -1500,
+                centralGravity: 0.05,
+                springLength: 350,
+                springConstant: 0.01,
+                damping: 0.3,
+                maxVelocity: 15
+            },
+            high: {
+                gravitationalConstant: -2000,
+                centralGravity: 0.1,
+                springLength: 300,
+                springConstant: 0.02,
+                damping: 0.2,
+                maxVelocity: 25
+            }
+        };
+
+        const config = configs[level] || configs.medium;
+        
+        this.network.setOptions({
+            physics: {
+                barnesHut: config
+            }
+        });
+        
+        this.showStatus(`🌊 Fluidity set to ${level}`, 'success');
     }
 }
 
