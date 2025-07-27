@@ -573,6 +573,40 @@
             gap: 8px;
         }
 
+        .instructions-toggle {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            justify-content: space-between;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .instructions-toggle:hover {
+            color: var(--text-primary);
+        }
+
+        .toggle-icon {
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .instructions-content {
+            max-height: 200px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .instructions-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
         .instructions ul {
             margin-left: 24px;
             color: var(--text-secondary);
@@ -629,14 +663,19 @@
         </div>
         
         <div class="instructions">
-            <h4><i class="fas fa-info-circle"></i> How to Use:</h4>
-            <ul>
-                <li><strong>Load Sample Data:</strong> See the graph with demo data instantly</li>
-                <li><strong>Upload JSON File:</strong> Load your own network-data.json file</li>
-                <li><strong>Browse Repository:</strong> Select a local folder to analyze its dependencies</li>
-                <li><strong>Analyze Path:</strong> Enter a specific repository path for analysis</li>
-                <li><strong>Server Mode:</strong> Run <code>node server.js</code> for full backend functionality</li>
-            </ul>
+            <h4 class="instructions-toggle" onclick="toggleInstructions()">
+                <i class="fas fa-info-circle"></i> How to Use 
+                <i class="fas fa-chevron-down toggle-icon" id="toggle-icon"></i>
+            </h4>
+            <div class="instructions-content" id="instructions-content">
+                <ul>
+                    <li><strong>Load Sample Data:</strong> See the graph with demo data instantly</li>
+                    <li><strong>Upload JSON File:</strong> Load your own network-data.json file</li>
+                    <li><strong>Browse Repository:</strong> Select a local folder to analyze its dependencies</li>
+                    <li><strong>Analyze Path:</strong> Enter a specific repository path for analysis</li>
+                    <li><strong>Server Mode:</strong> Run <code>node server.js</code> for full backend functionality</li>
+                </ul>
+            </div>
         </div>
         
         <div id="status" class="status hidden"></div>
@@ -700,5 +739,24 @@
     </div>
 
     <script src="js/dependency-graph.js"></script>
+    <script>
+        function toggleInstructions() {
+            const content = document.getElementById('instructions-content');
+            const icon = document.getElementById('toggle-icon');
+            
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('rotated');
+        }
+
+        // Start with instructions collapsed by default
+        document.addEventListener('DOMContentLoaded', () => {
+            const content = document.getElementById('instructions-content');
+            const icon = document.getElementById('toggle-icon');
+            
+            // Collapse by default for cleaner interface
+            content.classList.add('collapsed');
+            icon.classList.add('rotated');
+        });
+    </script>
 </body>
 </html>
