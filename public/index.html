@@ -715,6 +715,117 @@
             font-weight: 500;
         }
 
+        /* Connection Analysis Styling */
+        .connection-analysis {
+            color: var(--text-primary);
+        }
+
+        .analysis-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            background: var(--bg-primary);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .analysis-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        .stat-text {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .connection-group {
+            margin-bottom: 16px;
+        }
+
+        .connection-group h5 {
+            color: var(--accent-blue);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .connection-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .connection-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .connection-item:hover {
+            background: var(--bg-accent);
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+        .connection-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid var(--border-primary);
+        }
+
+        .connection-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .connection-item:hover .connection-name {
+            color: var(--text-primary);
+        }
+
+        .analysis-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 16px;
+        }
+
+        .analysis-btn {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .analysis-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
         /* Animation for page load */
         @keyframes fadeInUp {
             from {
@@ -993,6 +1104,20 @@
         function highlightConnections(nodeId) {
             if (viewer) {
                 viewer.highlightConnections(nodeId);
+            }
+        }
+
+        function exploreConnectionChain(nodeId) {
+            if (viewer) {
+                // TODO: Implement connection chain exploration
+                viewer.showStatus('🕸️ Connection chain exploration coming soon!', 'success');
+            }
+        }
+
+        function findShortestPath(nodeId) {
+            if (viewer) {
+                // TODO: Implement shortest path finding
+                viewer.showStatus('🎯 Shortest path finding coming soon!', 'success');
             }
         }
 

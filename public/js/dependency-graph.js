@@ -897,17 +897,196 @@ class DependencyGraphViewer {
     highlightConnections(nodeId) {
         const connectedNodes = this.network.getConnectedNodes(nodeId);
         const connectedEdges = this.network.getConnectedEdges(nodeId);
+        const selectedNode = this.nodes.get(nodeId);
         
-        // Select the node and its connections
-        this.network.selectNodes([nodeId, ...connectedNodes]);
-        this.network.selectEdges(connectedEdges);
+        if (connectedNodes.length === 0) {
+            this.showStatus('🔍 This node has no connections', 'error');
+            return;
+        }
+
+        // Create magical visual effects
+        this.createConnectionAnimation(nodeId, connectedNodes, connectedEdges);
         
-        this.showStatus(`🔗 Highlighted ${connectedNodes.length} connections`, 'success');
+        // Show detailed connection analysis
+        this.showConnectionAnalysis(nodeId, connectedNodes, connectedEdges);
         
-        // Auto-clear selection after 3 seconds
+        // Focus on the connection cluster
+        this.network.fit([nodeId, ...connectedNodes], {
+            animation: {
+                duration: 1500,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+        
+        this.showStatus(`✨ Exploring ${connectedNodes.length} connections for ${selectedNode.label}`, 'success');
+    }
+
+    createConnectionAnimation(nodeId, connectedNodes, connectedEdges) {
+        // Phase 1: Pulse the main node
+        this.pulseNode(nodeId, '#ff6b6b', 1.5);
+        
+        // Phase 2: Animate connections one by one
+        connectedNodes.forEach((connectedId, index) => {
+            setTimeout(() => {
+                this.pulseNode(connectedId, '#4ecdc4', 1.3);
+                this.animateEdge(nodeId, connectedId);
+            }, 200 * (index + 1));
+        });
+        
+        // Phase 3: Final highlight
         setTimeout(() => {
-            this.network.unselectAll();
-        }, 3000);
+            this.network.selectNodes([nodeId, ...connectedNodes]);
+            this.network.selectEdges(connectedEdges);
+            
+            // Auto-clear after showing the magic
+            setTimeout(() => {
+                this.network.unselectAll();
+                this.resetNodeSizes();
+            }, 4000);
+        }, 200 * connectedNodes.length + 500);
+    }
+
+    pulseNode(nodeId, color, scale) {
+        const node = this.nodes.get(nodeId);
+        if (!node) return;
+        
+        // Temporarily change node appearance
+        this.nodes.update({
+            id: nodeId,
+            color: {
+                background: color,
+                border: '#fff',
+                highlight: { background: color, border: '#333' }
+            },
+            size: node.size * scale,
+            borderWidth: 4
+        });
+        
+        // Reset after animation
+        setTimeout(() => {
+            this.nodes.update({
+                id: nodeId,
+                color: node.color,
+                size: node.size,
+                borderWidth: node.borderWidth || 2
+            });
+        }, 1000);
+    }
+
+    animateEdge(fromId, toId) {
+        const edgeId = this.edges.get().find(edge => 
+            (edge.from === fromId && edge.to === toId) || 
+            (edge.from === toId && edge.to === fromId)
+        )?.id;
+        
+        if (edgeId) {
+            // Temporarily highlight edge
+            this.edges.update({
+                id: edgeId,
+                color: { color: '#ff6b6b', opacity: 1 },
+                width: 4
+            });
+            
+            // Reset edge after animation
+            setTimeout(() => {
+                this.edges.update({
+                    id: edgeId,
+                    color: { color: '#848484', opacity: 0.8 },
+                    width: 2
+                });
+            }, 1500);
+        }
+    }
+
+    showConnectionAnalysis(nodeId, connectedNodes, connectedEdges) {
+        const selectedNode = this.nodes.get(nodeId);
+        const dependencies = [];
+        const dependents = [];
+        
+        // Analyze connection types
+        connectedEdges.forEach(edgeId => {
+            const edge = this.edges.get(edgeId);
+            if (edge.from === nodeId) {
+                const targetNode = this.nodes.get(edge.to);
+                dependencies.push(targetNode);
+            } else if (edge.to === nodeId) {
+                const sourceNode = this.nodes.get(edge.from);
+                dependents.push(sourceNode);
+            }
+        });
+
+        // Create enhanced analysis display
+        const analysisHtml = `
+            <div class="connection-analysis">
+                <h4 style="color: var(--accent-blue); margin-bottom: 12px;">
+                    🔗 Connection Analysis: ${selectedNode.label}
+                </h4>
+                
+                <div class="analysis-stats">
+                    <div class="analysis-stat">
+                        <span class="stat-icon">📥</span>
+                        <span class="stat-text">Incoming: ${dependents.length}</span>
+                    </div>
+                    <div class="analysis-stat">
+                        <span class="stat-icon">📤</span>
+                        <span class="stat-text">Outgoing: ${dependencies.length}</span>
+                    </div>
+                    <div class="analysis-stat">
+                        <span class="stat-icon">🔗</span>
+                        <span class="stat-text">Total: ${connectedNodes.length}</span>
+                    </div>
+                </div>
+
+                ${dependents.length > 0 ? `
+                <div class="connection-group">
+                    <h5>📥 Files that depend on this:</h5>
+                    <div class="connection-list">
+                        ${dependents.map(node => `
+                            <div class="connection-item" onclick="focusOnNode(${node.id})">
+                                <span class="connection-dot" style="background: ${node.color.background};"></span>
+                                <span class="connection-name">${node.label}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                ${dependencies.length > 0 ? `
+                <div class="connection-group">
+                    <h5>📤 Files this depends on:</h5>
+                    <div class="connection-list">
+                        ${dependencies.map(node => `
+                            <div class="connection-item" onclick="focusOnNode(${node.id})">
+                                <span class="connection-dot" style="background: ${node.color.background};"></span>
+                                <span class="connection-name">${node.label}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="analysis-actions">
+                    <button onclick="exploreConnectionChain(${nodeId})" class="analysis-btn">
+                        🕸️ Explore Chain
+                    </button>
+                    <button onclick="findShortestPath(${nodeId})" class="analysis-btn">
+                        🎯 Find Paths
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('data-info').innerHTML = analysisHtml;
+    }
+
+    resetNodeSizes() {
+        // Reset all nodes to original sizes
+        const updates = this.nodes.get().map(node => ({
+            id: node.id,
+            size: node.size,
+            borderWidth: node.borderWidth || 2
+        }));
+        this.nodes.update(updates);
     }
 }
 
