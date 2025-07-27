@@ -638,6 +638,83 @@
             border-color: var(--accent-red);
         }
 
+        /* Node Details Styling */
+        .node-details {
+            color: var(--text-primary);
+        }
+
+        .detail-item {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-secondary);
+        }
+
+        .detail-item:last-of-type {
+            border-bottom: none;
+        }
+
+        .detail-item strong {
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .detail-item code {
+            background: var(--bg-primary);
+            color: var(--accent-orange);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .dependency-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .dep-item {
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            border: 1px solid var(--border-primary);
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .detail-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .detail-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        .type-badge {
+            display: inline-block;
+            font-weight: 500;
+        }
+
         /* Animation for page load */
         @keyframes fadeInUp {
             from {
@@ -904,6 +981,18 @@
                     icon.className = 'fas fa-play';
                     btn.innerHTML = '<i class="fas fa-play"></i> Resume Physics';
                 }
+            }
+        }
+
+        function focusOnNode(nodeId) {
+            if (viewer) {
+                viewer.focusOnNode(nodeId);
+            }
+        }
+
+        function highlightConnections(nodeId) {
+            if (viewer) {
+                viewer.highlightConnections(nodeId);
             }
         }
 

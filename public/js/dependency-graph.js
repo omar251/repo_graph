@@ -65,10 +65,17 @@ class DependencyGraphViewer {
             css: '#e34c26',
             html: '#e34f26',
             json: '#f39c12',
+            other: '#9ca3af',
             unknown: '#6c757d'
         };
         
         const normalizedType = type.toLowerCase();
+        
+        // Better detection for .js files that show as "other"
+        if (type === 'other' && node && node.label && node.label.endsWith('.js')) {
+            return colors.js;
+        }
+        
         return colors[normalizedType] || colors[type] || colors.unknown;
     }
 
@@ -317,10 +324,13 @@ class DependencyGraphViewer {
             if (params.nodes.length > 0) {
                 const nodeId = params.nodes[0];
                 const node = this.nodes.get(nodeId);
-                this.showStatus(`Selected: ${node.label}`, 'success');
+                this.showNodeDetails(nodeId);
                 
                 // Add attraction effect on click
                 this.addAttractionPulse(nodeId);
+            } else {
+                // Clear details when clicking empty space
+                this.clearNodeDetails();
             }
         });
 
@@ -411,6 +421,7 @@ class DependencyGraphViewer {
             missing: 'Missing',
             config: 'Config',
             json: 'JSON',
+            other: 'JavaScript', // Treat "other" .js files as JavaScript
             unknown: 'Other'
         };
         
@@ -771,6 +782,132 @@ class DependencyGraphViewer {
         });
         
         this.showStatus(`🌊 Fluidity set to ${level}`, 'success');
+    }
+
+    showNodeDetails(nodeId) {
+        const node = this.nodes.get(nodeId);
+        if (!node) return;
+
+        // Get connected nodes
+        const connectedNodes = this.network.getConnectedNodes(nodeId);
+        const connectedEdges = this.network.getConnectedEdges(nodeId);
+        
+        // Get dependencies and dependents
+        const dependencies = [];
+        const dependents = [];
+        
+        connectedEdges.forEach(edgeId => {
+            const edge = this.edges.get(edgeId);
+            if (edge.from === nodeId) {
+                const targetNode = this.nodes.get(edge.to);
+                dependencies.push(targetNode.label);
+            } else if (edge.to === nodeId) {
+                const sourceNode = this.nodes.get(edge.from);
+                dependents.push(sourceNode.label);
+            }
+        });
+
+        // Update data info section with detailed information
+        const detailsHtml = `
+            <div class="node-details">
+                <h4 style="color: var(--accent-blue); margin-bottom: 8px; font-size: 1rem;">
+                    <i class="fas fa-file-code"></i> ${node.label}
+                </h4>
+                
+                ${node.path && node.path !== 'N/A' ? `
+                <div class="detail-item">
+                    <strong>Path:</strong><br>
+                    <code style="font-size: 0.8rem; word-break: break-all;">${node.path}</code>
+                </div>
+                ` : ''}
+                
+                <div class="detail-item">
+                    <strong>Type:</strong> 
+                    <span class="type-badge" style="background: ${node.color.background}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
+                        ${this.getTypeLabel(node.type || 'unknown')}
+                    </span>
+                </div>
+                
+                <div class="detail-item">
+                    <strong>Connections:</strong> ${connectedNodes.length}
+                </div>
+                
+                ${dependencies.length > 0 ? `
+                <div class="detail-item">
+                    <strong>Dependencies (${dependencies.length}):</strong><br>
+                    <div class="dependency-list">
+                        ${dependencies.map(dep => `<span class="dep-item">${dep}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${dependents.length > 0 ? `
+                <div class="detail-item">
+                    <strong>Dependents (${dependents.length}):</strong><br>
+                    <div class="dependency-list">
+                        ${dependents.map(dep => `<span class="dep-item">${dep}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${node.size ? `
+                <div class="detail-item">
+                    <strong>File Size:</strong> ${this.formatFileSize(node.size)}
+                </div>
+                ` : ''}
+                
+                <div class="detail-actions" style="margin-top: 12px; display: flex; gap: 6px;">
+                    <button onclick="focusOnNode(${nodeId})" class="detail-btn">
+                        <i class="fas fa-crosshairs"></i> Focus
+                    </button>
+                    <button onclick="highlightConnections(${nodeId})" class="detail-btn">
+                        <i class="fas fa-project-diagram"></i> Connections
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('data-info').innerHTML = detailsHtml;
+        this.showStatus(`📋 Viewing details: ${node.label}`, 'success');
+    }
+
+    clearNodeDetails() {
+        this.updateDataInfo('No data loaded');
+        this.showStatus('Click a node to view details', 'success');
+    }
+
+    formatFileSize(bytes) {
+        if (!bytes) return 'Unknown';
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    focusOnNode(nodeId) {
+        this.network.focus(nodeId, {
+            scale: 1.5,
+            animation: {
+                duration: 1000,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+        this.showStatus('🎯 Focused on node', 'success');
+    }
+
+    highlightConnections(nodeId) {
+        const connectedNodes = this.network.getConnectedNodes(nodeId);
+        const connectedEdges = this.network.getConnectedEdges(nodeId);
+        
+        // Select the node and its connections
+        this.network.selectNodes([nodeId, ...connectedNodes]);
+        this.network.selectEdges(connectedEdges);
+        
+        this.showStatus(`🔗 Highlighted ${connectedNodes.length} connections`, 'success');
+        
+        // Auto-clear selection after 3 seconds
+        setTimeout(() => {
+            this.network.unselectAll();
+        }, 3000);
     }
 }
 
