@@ -12,7 +12,7 @@ class MouseNavigationSystem {
             smoothing: 0.15,
             maxDistance: 200,
             deadZone: 30,
-            invertPanning: true,
+            invertPanning: false,
             exponentialScaling: false,
             showVisualizations: true,
         };
@@ -59,6 +59,10 @@ class MouseNavigationSystem {
             presetResponsive: document.getElementById("presetResponsive"),
             presetPrecision: document.getElementById("presetPrecision"),
             visualizationLayer: document.querySelector(".visualization-layer"),
+            basicParamsHeader: document.getElementById("basicParamsHeader"),
+            basicParamsContent: document.getElementById("basicParamsContent"),
+            advancedOptionsHeader: document.getElementById("advancedOptionsHeader"),
+            advancedOptionsContent: document.getElementById("advancedOptionsContent"),
         };
     }
 
@@ -144,6 +148,9 @@ class MouseNavigationSystem {
             this.uiElements.presetSmooth.addEventListener("click", () => this.applyPreset("smooth"));
             this.uiElements.presetResponsive.addEventListener("click", () => this.applyPreset("responsive"));
             this.uiElements.presetPrecision.addEventListener("click", () => this.applyPreset("precision"));
+
+            this.uiElements.basicParamsHeader.addEventListener("click", () => this.toggleSection(this.uiElements.basicParamsContent, this.uiElements.basicParamsHeader.querySelector('.toggle-icon')));
+            this.uiElements.advancedOptionsHeader.addEventListener("click", () => this.toggleSection(this.uiElements.advancedOptionsContent, this.uiElements.advancedOptionsHeader.querySelector('.toggle-icon')));
         }
     }
 
@@ -293,7 +300,7 @@ class MouseNavigationSystem {
             smoothing: 0.15,
             maxDistance: 200,
             deadZone: 30,
-            invertPanning: true,
+            invertPanning: false,
             exponentialScaling: false,
             showVisualizations: true,
         };
@@ -396,6 +403,11 @@ class MouseNavigationSystem {
         this.params.deadZone = parseInt(e.target.value);
         this.uiElements.deadZoneValue.textContent = this.params.deadZone;
         this.updateVisualizations();
+    }
+
+    toggleSection(contentElement, iconElement) {
+        contentElement.classList.toggle('collapsed');
+        iconElement.classList.toggle('rotated');
     }
 }
 
