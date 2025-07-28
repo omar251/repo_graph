@@ -826,6 +826,154 @@
             border-color: var(--accent-blue);
         }
 
+        /* Dependency Tree Analysis Styling */
+        .dependency-analysis {
+            color: var(--text-primary);
+        }
+
+        .tree-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 16px;
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .tree-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tree-stat-number {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--accent-blue);
+        }
+
+        .tree-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .depth-legend {
+            margin-bottom: 16px;
+            padding: 8px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+        }
+
+        .depth-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid var(--border-primary);
+        }
+
+        .depth-group {
+            margin-bottom: 12px;
+        }
+
+        .depth-group h5 {
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .depth-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .depth-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .depth-item:hover {
+            background: var(--bg-accent);
+            border-color: var(--accent-blue);
+            transform: translateX(2px);
+        }
+
+        .depth-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid var(--border-primary);
+        }
+
+        .depth-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .depth-item:hover .depth-name {
+            color: var(--text-primary);
+        }
+
+        .tree-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 16px;
+        }
+
+        .tree-btn {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .tree-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* Special button styling */
+        .dependency-btn {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d) !important;
+            color: white !important;
+            border-color: #4ecdc4 !important;
+        }
+
+        .dependent-btn {
+            background: linear-gradient(135deg, #a8edea, #fed6e3) !important;
+            color: #333 !important;
+            border-color: #a8edea !important;
+        }
+
         /* Animation for page load */
         @keyframes fadeInUp {
             from {
@@ -1118,6 +1266,33 @@
             if (viewer) {
                 // TODO: Implement shortest path finding
                 viewer.showStatus('🎯 Shortest path finding coming soon!', 'success');
+            }
+        }
+
+        function findAllDependencies(nodeId) {
+            if (viewer) {
+                viewer.findAllDependencies(nodeId);
+            }
+        }
+
+        function findAllDependents(nodeId) {
+            if (viewer) {
+                viewer.findAllDependents(nodeId);
+            }
+        }
+
+        function clearHighlights() {
+            if (viewer) {
+                viewer.resetAllNodeStyles();
+                viewer.network.unselectAll();
+                viewer.showStatus('🧹 Highlights cleared', 'success');
+            }
+        }
+
+        function exportDependencyTree(nodeId, type) {
+            if (viewer) {
+                // TODO: Implement dependency tree export
+                viewer.showStatus('📄 Dependency tree export coming soon!', 'success');
             }
         }
 

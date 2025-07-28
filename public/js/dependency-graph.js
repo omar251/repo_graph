@@ -179,6 +179,9 @@ class DependencyGraphViewer {
         this.showLoading();
         
         try {
+            // Store original data for dependency analysis
+            this.originalData = data;
+            
             // Process data
             const processedNodes = this.processNodes(data.nodes);
             const processedEdges = this.processEdges(data.edges);
@@ -864,6 +867,14 @@ class DependencyGraphViewer {
                         <i class="fas fa-project-diagram"></i> Connections
                     </button>
                 </div>
+                <div class="detail-actions" style="margin-top: 8px; display: flex; gap: 6px;">
+                    <button onclick="findAllDependencies(${nodeId})" class="detail-btn dependency-btn">
+                        <i class="fas fa-sitemap"></i> All Dependencies
+                    </button>
+                    <button onclick="findAllDependents(${nodeId})" class="detail-btn dependent-btn">
+                        <i class="fas fa-code-branch"></i> All Dependents
+                    </button>
+                </div>
             </div>
         `;
 
@@ -1087,6 +1098,323 @@ class DependencyGraphViewer {
             borderWidth: node.borderWidth || 2
         }));
         this.nodes.update(updates);
+    }
+
+    findAllDependencies(nodeId) {
+        console.log('Finding dependencies for node:', nodeId);
+        console.log('Available edges:', this.edges.get());
+        
+        const allDependencies = this.getAllDependencies(nodeId);
+        const selectedNode = this.nodes.get(nodeId);
+        
+        console.log('Found dependencies:', allDependencies);
+        
+        if (allDependencies.length === 0) {
+            this.showStatus(`📦 ${selectedNode.label} has no dependencies`, 'success');
+            return;
+        }
+
+        this.highlightDependencyTree(nodeId, allDependencies, 'dependencies');
+        this.showDependencyAnalysis(nodeId, allDependencies, 'dependencies');
+        
+        this.showStatus(`📦 Found ${allDependencies.length} total dependencies for ${selectedNode.label}`, 'success');
+    }
+
+    findAllDependents(nodeId) {
+        console.log('Finding dependents for node:', nodeId);
+        
+        const allDependents = this.getAllDependents(nodeId);
+        const selectedNode = this.nodes.get(nodeId);
+        
+        console.log('Found dependents:', allDependents);
+        
+        if (allDependents.length === 0) {
+            this.showStatus(`🔗 ${selectedNode.label} has no dependents`, 'success');
+            return;
+        }
+
+        this.highlightDependencyTree(nodeId, allDependents, 'dependents');
+        this.showDependencyAnalysis(nodeId, allDependents, 'dependents');
+        
+        this.showStatus(`🔗 Found ${allDependents.length} total dependents for ${selectedNode.label}`, 'success');
+    }
+
+    getAllDependencies(nodeId, visited = new Set(), depth = 0) {
+        if (visited.has(nodeId) || depth > 10) return []; // Prevent infinite loops
+        
+        visited.add(nodeId);
+        const dependencies = [];
+        const directDeps = [];
+
+        console.log(`Checking dependencies for node ${nodeId} at depth ${depth}`);
+
+        // Find direct dependencies (nodes this node depends on)
+        this.edges.get().forEach(edge => {
+            console.log(`Checking edge: ${edge.from} -> ${edge.to}`);
+            if (edge.from === nodeId && !visited.has(edge.to)) {
+                console.log(`Found dependency: ${nodeId} -> ${edge.to}`);
+                directDeps.push(edge.to);
+                dependencies.push({
+                    id: edge.to,
+                    depth: depth + 1,
+                    path: [...(arguments[3] || []), nodeId, edge.to]
+                });
+            }
+        });
+
+        console.log(`Direct dependencies for ${nodeId}:`, directDeps);
+
+        // Recursively find dependencies of dependencies
+        directDeps.forEach(depId => {
+            const subDeps = this.getAllDependencies(depId, new Set(visited), depth + 1, 
+                [...(arguments[3] || []), nodeId]);
+            dependencies.push(...subDeps);
+        });
+
+        return dependencies;
+    }
+
+    getAllDependents(nodeId, visited = new Set(), depth = 0) {
+        if (visited.has(nodeId) || depth > 10) return []; // Prevent infinite loops
+        
+        visited.add(nodeId);
+        const dependents = [];
+        const directDeps = [];
+
+        // Find direct dependents (nodes that depend on this node)
+        this.edges.get().forEach(edge => {
+            if (edge.to === nodeId && !visited.has(edge.from)) {
+                directDeps.push(edge.from);
+                dependents.push({
+                    id: edge.from,
+                    depth: depth + 1,
+                    path: [...(arguments[3] || []), nodeId, edge.from]
+                });
+            }
+        });
+
+        // Recursively find dependents of dependents
+        directDeps.forEach(depId => {
+            const subDeps = this.getAllDependents(depId, new Set(visited), depth + 1,
+                [...(arguments[3] || []), nodeId]);
+            dependents.push(...subDeps);
+        });
+
+        return dependents;
+    }
+
+    highlightDependencyTree(rootNodeId, dependencies, type) {
+        // Reset all nodes first
+        this.resetAllNodeStyles();
+
+        // Color scheme for dependency tree
+        const colors = {
+            root: '#ff6b6b',      // Red for selected node
+            depth1: '#4ecdc4',    // Teal for direct dependencies
+            depth2: '#45b7d1',    // Blue for 2nd level
+            depth3: '#96ceb4',    // Green for 3rd level
+            depth4: '#feca57',    // Yellow for 4th level
+            deeper: '#a55eea'     // Purple for deeper levels
+        };
+
+        // Highlight root node
+        this.highlightNode(rootNodeId, colors.root, 1.4);
+
+        // Highlight dependency tree with depth-based colors
+        dependencies.forEach(dep => {
+            let color;
+            switch(dep.depth) {
+                case 1: color = colors.depth1; break;
+                case 2: color = colors.depth2; break;
+                case 3: color = colors.depth3; break;
+                case 4: color = colors.depth4; break;
+                default: color = colors.deeper; break;
+            }
+            
+            this.highlightNode(dep.id, color, 1.2);
+        });
+
+        // Highlight relevant edges
+        this.highlightDependencyEdges(rootNodeId, dependencies, type);
+
+        // Focus on the dependency cluster
+        const allNodeIds = [rootNodeId, ...dependencies.map(d => d.id)];
+        this.network.fit(allNodeIds, {
+            animation: { duration: 1500, easingFunction: 'easeInOutQuad' }
+        });
+
+        // Auto-clear after 8 seconds
+        setTimeout(() => {
+            this.resetAllNodeStyles();
+            this.network.unselectAll();
+        }, 8000);
+    }
+
+    highlightNode(nodeId, color, scale) {
+        const node = this.nodes.get(nodeId);
+        if (!node) return;
+
+        this.nodes.update({
+            id: nodeId,
+            color: {
+                background: color,
+                border: '#fff',
+                highlight: { background: color, border: '#333' }
+            },
+            size: Math.round(node.size * scale),
+            borderWidth: 3,
+            font: { ...node.font, color: '#fff', strokeWidth: 2, strokeColor: '#000' }
+        });
+    }
+
+    highlightDependencyEdges(rootNodeId, dependencies, type) {
+        const relevantEdges = [];
+        
+        dependencies.forEach(dep => {
+            this.edges.get().forEach(edge => {
+                if (type === 'dependencies') {
+                    // For dependencies: highlight edges going FROM root TO dependencies
+                    if ((edge.from === rootNodeId && edge.to === dep.id) ||
+                        dependencies.some(d => d.id === edge.from && dependencies.some(d2 => d2.id === edge.to))) {
+                        relevantEdges.push(edge.id);
+                    }
+                } else {
+                    // For dependents: highlight edges going FROM dependents TO root
+                    if ((edge.to === rootNodeId && edge.from === dep.id) ||
+                        dependencies.some(d => d.id === edge.to && dependencies.some(d2 => d2.id === edge.from))) {
+                        relevantEdges.push(edge.id);
+                    }
+                }
+            });
+        });
+
+        // Update edge styles
+        relevantEdges.forEach(edgeId => {
+            this.edges.update({
+                id: edgeId,
+                color: { color: '#ff6b6b', opacity: 1 },
+                width: 3
+            });
+        });
+    }
+
+    resetAllNodeStyles() {
+        // Reset all nodes to original styles
+        const updates = this.nodes.get().map(node => {
+            // Get original node data to restore proper colors
+            const originalNode = this.originalData?.nodes?.find(n => n.id === node.id) || node;
+            return {
+                id: node.id,
+                color: this.getOriginalNodeColor(originalNode),
+                size: this.calculateNodeSize(originalNode),
+                borderWidth: 2,
+                font: { size: 12, color: '#333', strokeWidth: 2, strokeColor: '#fff' }
+            };
+        });
+        this.nodes.update(updates);
+
+        // Reset all edges
+        const edgeUpdates = this.edges.get().map(edge => ({
+            id: edge.id,
+            color: { color: '#848484', opacity: 0.8 },
+            width: 2
+        }));
+        this.edges.update(edgeUpdates);
+    }
+
+    getOriginalNodeColor(node) {
+        const isExternal = node.external === true;
+        const isMissing = node.type === 'missing';
+        return {
+            background: this.getNodeColor(node.type, isExternal, isMissing),
+            border: isMissing ? '#dc3545' : '#fff',
+            highlight: {
+                background: this.getNodeColor(node.type, isExternal, isMissing),
+                border: '#333'
+            }
+        };
+    }
+
+    showDependencyAnalysis(rootNodeId, dependencies, type) {
+        const selectedNode = this.nodes.get(rootNodeId);
+        const depsByDepth = {};
+        
+        // Group dependencies by depth
+        dependencies.forEach(dep => {
+            if (!depsByDepth[dep.depth]) depsByDepth[dep.depth] = [];
+            depsByDepth[dep.depth].push(this.nodes.get(dep.id));
+        });
+
+        const typeLabel = type === 'dependencies' ? 'Dependencies' : 'Dependents';
+        const icon = type === 'dependencies' ? '📦' : '🔗';
+        
+        const analysisHtml = `
+            <div class="dependency-analysis">
+                <h4 style="color: var(--accent-blue); margin-bottom: 12px;">
+                    ${icon} ${typeLabel} Tree: ${selectedNode.label}
+                </h4>
+                
+                <div class="tree-stats">
+                    <div class="tree-stat">
+                        <span class="tree-stat-number">${dependencies.length}</span>
+                        <span class="tree-stat-label">Total ${typeLabel}</span>
+                    </div>
+                    <div class="tree-stat">
+                        <span class="tree-stat-number">${Object.keys(depsByDepth).length}</span>
+                        <span class="tree-stat-label">Depth Levels</span>
+                    </div>
+                </div>
+
+                <div class="depth-legend">
+                    <div class="legend-row">
+                        <span class="depth-color" style="background: #ff6b6b;"></span>
+                        <span>Selected Node</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="depth-color" style="background: #4ecdc4;"></span>
+                        <span>Level 1 (Direct)</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="depth-color" style="background: #45b7d1;"></span>
+                        <span>Level 2</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="depth-color" style="background: #96ceb4;"></span>
+                        <span>Level 3+</span>
+                    </div>
+                </div>
+
+                ${Object.keys(depsByDepth).map(depth => `
+                    <div class="depth-group">
+                        <h5>Level ${depth} (${depsByDepth[depth].length} files):</h5>
+                        <div class="depth-list">
+                            ${depsByDepth[depth].map(node => `
+                                <div class="depth-item" onclick="focusOnNode(${node.id})">
+                                    <span class="depth-dot" style="background: ${this.getDepthColor(parseInt(depth))};"></span>
+                                    <span class="depth-name">${node.label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+
+                <div class="tree-actions">
+                    <button onclick="exportDependencyTree(${rootNodeId}, '${type}')" class="tree-btn">
+                        <i class="fas fa-download"></i> Export Tree
+                    </button>
+                    <button onclick="clearHighlights()" class="tree-btn">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('data-info').innerHTML = analysisHtml;
+    }
+
+    getDepthColor(depth) {
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#a55eea'];
+        return colors[Math.min(depth, colors.length - 1)];
     }
 }
 
