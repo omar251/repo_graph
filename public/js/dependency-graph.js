@@ -1,3 +1,405 @@
+class MouseNavigationSystem {
+    constructor(network, container) {
+        this.network = network;
+        this.container = container;
+        this.enabled = false;
+        this.animationFrame = null;
+        this.lastMouseX = null;
+        this.lastMouseY = null;
+
+        this.params = {
+            sensitivity: 0.05,
+            smoothing: 0.15,
+            maxDistance: 200,
+            deadZone: 30,
+            invertPanning: true,
+            exponentialScaling: false,
+            showVisualizations: true,
+        };
+
+        this.currentPosition = { x: 0, y: 0 };
+        this.targetPosition = { x: 0, y: 0 };
+        this.currentScale = 1;
+
+        this.uiElements = {};
+        this.init();
+    }
+
+    init() {
+        this.setupUIElements();
+        this.setupEventListeners();
+        this.setupKeyboardShortcuts();
+        this.updateVisualizations();
+    }
+
+    setupUIElements() {
+        this.uiElements = {
+            toggleBtn: document.getElementById("toggleBtn"),
+            statusIndicator: document.getElementById("statusIndicator"),
+            statusText: document.getElementById("statusText"),
+            mouseInfo: document.getElementById("mouseInfo"),
+            sensitivitySlider: document.getElementById("sensitivitySlider"),
+            sensitivityValue: document.getElementById("sensitivityValue"),
+            smoothingSlider: document.getElementById("smoothingSlider"),
+            smoothingValue: document.getElementById("smoothingValue"),
+            maxDistSlider: document.getElementById("maxDistSlider"),
+            maxDistValue: document.getElementById("maxDistValue"),
+            deadZoneSlider: document.getElementById("deadZoneSlider"),
+            deadZoneValue: document.getElementById("deadZoneValue"),
+            invertPanning: document.getElementById("invertPanning"),
+            showVisualizations: document.getElementById("showVisualizations"),
+            exponentialScaling: document.getElementById("exponentialScaling"),
+            activeZone: document.getElementById("activeZone"),
+            deadZone: document.getElementById("deadZone"),
+            mousePointer: document.getElementById("mousePointer"),
+            resetPositionBtn: document.getElementById("resetPositionBtn"),
+            resetAllBtn: document.getElementById("resetAllBtn"),
+            presetDefault: document.getElementById("presetDefault"),
+            presetSmooth: document.getElementById("presetSmooth"),
+            presetResponsive: document.getElementById("presetResponsive"),
+            presetPrecision: document.getElementById("presetPrecision"),
+            visualizationLayer: document.querySelector(".visualization-layer"),
+        };
+    }
+
+    setupEventListeners() {
+        const debounce = (fn, wait) => {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), wait);
+            };
+        };
+
+        this.container.addEventListener("mousemove", (e) => {
+            if (!this.container) return;
+
+            const rect = this.container.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            this.lastMouseX = mx;
+            this.lastMouseY = my;
+
+            if (this.uiElements.mouseInfo) {
+                this.uiElements.mouseInfo.textContent = `Mouse: (${Math.round(mx)}, ${Math.round(my)})`;
+            }
+
+            if (this.params.showVisualizations) {
+                this.updateMousePointer(mx, my);
+            }
+
+            if (this.enabled && !this.animationFrame) {
+                this.animationFrame = requestAnimationFrame(() => this.animate());
+            }
+        });
+
+        this.container.addEventListener("mouseleave", () => {
+            this.lastMouseX = null;
+            this.lastMouseY = null;
+            if(this.uiElements.mouseInfo) {
+                this.uiElements.mouseInfo.textContent = "Mouse: Outside";
+            }
+
+            if (this.params.showVisualizations) {
+                this.uiElements.mousePointer.classList.remove("active");
+            }
+        });
+
+        this.container.addEventListener("wheel", (e) => {
+            if (e.ctrlKey || e.metaKey) return; 
+
+            e.preventDefault();
+            const currentScale = this.network.getScale();
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            const newScale = Math.min(Math.max(currentScale * zoomFactor, 0.05), 10);
+
+            this.network.moveTo({
+                scale: newScale,
+                animation: {
+                    duration: 150,
+                    easingFunction: "easeOutQuad",
+                },
+            });
+
+            this.currentScale = newScale;
+        }, { passive: false });
+
+        if (this.uiElements.sensitivitySlider) {
+            this.uiElements.sensitivitySlider.addEventListener("input", debounce(this.handleSensitivityChange.bind(this), 50));
+            this.uiElements.smoothingSlider.addEventListener("input", debounce(this.handleSmoothingChange.bind(this), 50));
+            this.uiElements.maxDistSlider.addEventListener("input", debounce(this.handleMaxDistanceChange.bind(this), 50));
+            this.uiElements.deadZoneSlider.addEventListener("input", debounce(this.handleDeadZoneChange.bind(this), 50));
+            this.uiElements.invertPanning.addEventListener("change", (e) => (this.params.invertPanning = e.target.checked));
+            this.uiElements.showVisualizations.addEventListener("change", (e) => {
+                this.params.showVisualizations = e.target.checked;
+                this.uiElements.visualizationLayer.style.display = e.target.checked ? "block" : "none";
+                this.updateVisualizations();
+            });
+            this.uiElements.exponentialScaling.addEventListener("change", (e) => (this.params.exponentialScaling = e.target.checked));
+            this.uiElements.toggleBtn.addEventListener("click", () => this.toggle());
+            this.uiElements.resetPositionBtn.addEventListener("click", () => this.resetPosition());
+            this.uiElements.resetAllBtn.addEventListener("click", () => this.resetAll());
+            this.uiElements.presetDefault.addEventListener("click", () => this.applyPreset("default"));
+            this.uiElements.presetSmooth.addEventListener("click", () => this.applyPreset("smooth"));
+            this.uiElements.presetResponsive.addEventListener("click", () => this.applyPreset("responsive"));
+            this.uiElements.presetPrecision.addEventListener("click", () => this.applyPreset("precision"));
+        }
+    }
+
+    setupKeyboardShortcuts() {
+        document.addEventListener("keydown", (e) => {
+            if (document.activeElement.tagName === "INPUT") return;
+
+            switch (e.key.toLowerCase()) {
+                case " ":
+                    e.preventDefault();
+                    this.toggle();
+                    break;
+                case "r":
+                    e.preventDefault();
+                    this.resetPosition();
+                    break;
+                case "escape":
+                    e.preventDefault();
+                    if (this.enabled) this.toggle();
+                    break;
+            }
+        });
+    }
+
+    animate() {
+        if (!this.enabled) {
+            this.animationFrame = null;
+            return;
+        }
+
+        if (this.lastMouseX !== null && this.lastMouseY !== null) {
+            const rect = this.container.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            let dx = this.lastMouseX - centerX;
+            let dy = this.lastMouseY - centerY;
+            const distance = Math.hypot(dx, dy);
+
+            let effectiveDistance = Math.max(0, distance - this.params.deadZone);
+
+            if (this.params.exponentialScaling && effectiveDistance > 0) {
+                effectiveDistance = (Math.pow(effectiveDistance, 1.3) / Math.pow(rect.width * 0.4, 0.3)) * 1.5;
+            }
+
+            if (effectiveDistance > this.params.maxDistance) {
+                const factor = this.params.maxDistance / effectiveDistance;
+                dx *= factor;
+                dy *= factor;
+                effectiveDistance = this.params.maxDistance;
+            }
+
+            const directionFactor = this.params.invertPanning ? -1 : 1;
+            const scale = this.network.getScale();
+            const moveFactor = this.params.sensitivity * (effectiveDistance / 100);
+
+            const graphDx = (dx * moveFactor) / scale;
+            const graphDy = (dy * moveFactor) / scale;
+
+            this.targetPosition.x = this.currentPosition.x + directionFactor * graphDx;
+            this.targetPosition.y = this.currentPosition.y + directionFactor * graphDy;
+        }
+
+        const nx = this.currentPosition.x + (this.targetPosition.x - this.currentPosition.x) * this.params.smoothing;
+        const ny = this.currentPosition.y + (this.targetPosition.y - this.currentPosition.y) * this.params.smoothing;
+
+        this.network.moveTo({
+            position: { x: nx, y: ny },
+            animation: false,
+        });
+
+        this.currentPosition.x = nx;
+        this.currentPosition.y = ny;
+
+        const diffX = this.targetPosition.x - nx;
+        const diffY = this.targetPosition.y - ny;
+        const distance = Math.hypot(diffX, diffY);
+
+        if (distance > 0.3) {
+            this.animationFrame = requestAnimationFrame(() => this.animate());
+        } else {
+            this.animationFrame = null;
+        }
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+
+        if (this.enabled) {
+            if (this.uiElements.toggleBtn) {
+                this.uiElements.toggleBtn.innerHTML = "<span>⏹</span> Disable Navigation";
+                this.uiElements.toggleBtn.classList.add("active");
+            }
+            if (this.uiElements.statusText) {
+                this.uiElements.statusText.textContent = "Mouse Navigation: Enabled";
+            }
+            if (this.uiElements.statusIndicator) {
+                this.uiElements.statusIndicator.classList.add("active");
+            }
+
+            const v = this.network.getViewPosition();
+            this.currentPosition = { ...v };
+            this.targetPosition = { ...v };
+            this.currentScale = this.network.getScale();
+
+            if (!this.animationFrame) {
+                this.animationFrame = requestAnimationFrame(() => this.animate());
+            }
+        } else {
+            if (this.uiElements.toggleBtn) {
+                this.uiElements.toggleBtn.innerHTML = "<span>⏵</span> Enable Mouse Navigation";
+                this.uiElements.toggleBtn.classList.remove("active");
+            }
+            if (this.uiElements.statusText) {
+                this.uiElements.statusText.textContent = "Mouse Navigation: Disabled";
+            }
+            if (this.uiElements.statusIndicator) {
+                this.uiElements.statusIndicator.classList.remove("active");
+            }
+
+            if (this.animationFrame) {
+                cancelAnimationFrame(this.animationFrame);
+                this.animationFrame = null;
+            }
+        }
+    }
+
+    resetPosition() {
+        this.network.fit({
+            animation: {
+                duration: 400,
+                easingFunction: "easeInOutQuad",
+            },
+        });
+
+        setTimeout(() => {
+            const v = this.network.getViewPosition();
+            this.currentPosition = { ...v };
+            this.targetPosition = { ...v };
+            this.currentScale = this.network.getScale();
+        }, 450);
+    }
+
+    resetAll() {
+        this.params = {
+            sensitivity: 0.05,
+            smoothing: 0.15,
+            maxDistance: 200,
+            deadZone: 30,
+            invertPanning: true,
+            exponentialScaling: false,
+            showVisualizations: true,
+        };
+
+        if (this.uiElements.sensitivitySlider) {
+            this.uiElements.sensitivitySlider.value = this.params.sensitivity;
+            this.uiElements.sensitivityValue.textContent = this.params.sensitivity.toFixed(2);
+            this.uiElements.smoothingSlider.value = this.params.smoothing;
+            this.uiElements.smoothingValue.textContent = this.params.smoothing.toFixed(2);
+            this.uiElements.maxDistSlider.value = this.params.maxDistance;
+            this.uiElements.maxDistValue.textContent = this.params.maxDistance;
+            this.uiElements.deadZoneSlider.value = this.params.deadZone;
+            this.uiElements.deadZoneValue.textContent = this.params.deadZone;
+            this.uiElements.invertPanning.checked = this.params.invertPanning;
+            this.uiElements.exponentialScaling.checked = this.params.exponentialScaling;
+            this.uiElements.showVisualizations.checked = this.params.showVisualizations;
+        }
+
+        this.resetPosition();
+        this.updateVisualizations();
+    }
+
+    applyPreset(preset) {
+        let config;
+
+        switch (preset) {
+            case "default":
+                config = { sensitivity: 0.05, smoothing: 0.15, maxDistance: 200, deadZone: 30, exponentialScaling: false };
+                break;
+            case "smooth":
+                config = { sensitivity: 0.03, smoothing: 0.08, maxDistance: 250, deadZone: 40, exponentialScaling: true };
+                break;
+            case "responsive":
+                config = { sensitivity: 0.08, smoothing: 0.25, maxDistance: 180, deadZone: 20, exponentialScaling: false };
+                break;
+            case "precision":
+                config = { sensitivity: 0.02, smoothing: 0.05, maxDistance: 150, deadZone: 50, exponentialScaling: false };
+                break;
+            default:
+                config = { sensitivity: 0.05, smoothing: 0.15, maxDistance: 200, deadZone: 30, exponentialScaling: false };
+        }
+
+        this.params.sensitivity = config.sensitivity;
+        this.params.smoothing = config.smoothing;
+        this.params.maxDistance = config.maxDistance;
+        this.params.deadZone = config.deadZone;
+        this.params.exponentialScaling = config.exponentialScaling;
+
+        if (this.uiElements.sensitivitySlider) {
+            this.uiElements.sensitivitySlider.value = config.sensitivity;
+            this.uiElements.sensitivityValue.textContent = config.sensitivity.toFixed(2);
+            this.uiElements.smoothingSlider.value = config.smoothing;
+            this.uiElements.smoothingValue.textContent = config.smoothing.toFixed(2);
+            this.uiElements.maxDistSlider.value = config.maxDistance;
+            this.uiElements.maxDistValue.textContent = config.maxDistance;
+            this.uiElements.deadZoneSlider.value = config.deadZone;
+            this.uiElements.deadZoneValue.textContent = config.deadZone;
+            this.uiElements.exponentialScaling.checked = config.exponentialScaling;
+        }
+
+        this.updateVisualizations();
+    }
+
+    updateVisualizations() {
+        if (!this.container || !this.params.showVisualizations || !this.uiElements.activeZone) return;
+
+        const rect = this.container.getBoundingClientRect();
+        const radius = Math.min(rect.width, rect.height) * 0.4;
+
+        this.uiElements.activeZone.style.width = `${this.params.maxDistance * 2}px`;
+        this.uiElements.activeZone.style.height = `${this.params.maxDistance * 2}px`;
+        this.uiElements.deadZone.style.width = `${this.params.deadZone * 2}px`;
+        this.uiElements.deadZone.style.height = `${this.params.deadZone * 2}px`;
+    }
+
+    updateMousePointer(x, y) {
+        if (!this.uiElements.mousePointer) return;
+        this.uiElements.mousePointer.style.left = `${x}px`;
+        this.uiElements.mousePointer.style.top = `${y}px`;
+        this.uiElements.mousePointer.classList.add("active");
+    }
+
+    handleSensitivityChange(e) {
+        this.params.sensitivity = parseFloat(e.target.value);
+        this.uiElements.sensitivityValue.textContent = this.params.sensitivity.toFixed(2);
+    }
+
+    handleSmoothingChange(e) {
+        this.params.smoothing = parseFloat(e.target.value);
+        this.uiElements.smoothingValue.textContent = this.params.smoothing.toFixed(2);
+    }
+
+    handleMaxDistanceChange(e) {
+        this.params.maxDistance = parseInt(e.target.value);
+        this.uiElements.maxDistValue.textContent = this.params.maxDistance;
+        this.updateVisualizations();
+    }
+
+    handleDeadZoneChange(e) {
+        this.params.deadZone = parseInt(e.target.value);
+        this.uiElements.deadZoneValue.textContent = this.params.deadZone;
+        this.updateVisualizations();
+    }
+}
+
+
 class DependencyGraphViewer {
     constructor() {
         this.network = null;
@@ -345,6 +747,8 @@ class DependencyGraphViewer {
         this.network.on('blurNode', (params) => {
             this.removeNodeHoverEffect(params.node);
         });
+
+        this.mouseNav = new MouseNavigationSystem(this.network, this.container);
     }
 
     updateStats() {
@@ -1450,6 +1854,18 @@ function resetView() {
 
 function exportImage() {
     viewer.exportImage();
+}
+
+function toggleMouseNavigation() {
+    if (viewer && viewer.mouseNav) {
+        viewer.mouseNav.toggle();
+    }
+}
+
+function setMouseMode(mode) {
+    if (viewer && viewer.mouseNav) {
+        viewer.mouseNav.applyPreset(mode);
+    }
 }
 
 // Initialize when page loads

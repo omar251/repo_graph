@@ -1,0 +1,1367 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Advanced Mouse Navigation Test Lab</title>
+        <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+        <style>
+            :root {
+                --primary: #4ecdc4;
+                --primary-dark: #3da9a2;
+                --secondary: #ff6b6b;
+                --accent: #feca57;
+                --dark-bg: #1a1a1a;
+                --panel-bg: #2a2a2a;
+                --border-radius: 10px;
+                --transition: all 0.2s ease;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                padding: 20px;
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                background: var(--dark-bg);
+                color: white;
+                line-height: 1.6;
+                max-width: 1600px;
+                margin: 0 auto;
+            }
+
+            header {
+                margin-bottom: 20px;
+            }
+
+            h1 {
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+
+            .subtitle {
+                color: #888;
+                font-size: 16px;
+                max-width: 800px;
+            }
+
+            .container {
+                display: flex;
+                gap: 20px;
+                height: 80vh;
+            }
+
+            .controls {
+                width: 300px;
+                background: var(--panel-bg);
+                padding: 20px;
+                border-radius: var(--border-radius);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            .controls h3 {
+                margin-bottom: 15px;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .control-group {
+                margin-bottom: 25px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #333;
+            }
+
+            .control-group:last-child {
+                border-bottom: none;
+                margin-bottom: 15px;
+            }
+
+            .control-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+
+            .control-header h4 {
+                margin: 0;
+                font-size: 14px;
+                color: white;
+            }
+
+            .tooltip-icon {
+                cursor: help;
+                color: #888;
+                font-size: 12px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                border: 1px solid #888;
+                text-align: center;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: var(--transition);
+            }
+
+            .tooltip-icon:hover {
+                background: #444;
+                color: white;
+            }
+
+            .tooltip {
+                position: absolute;
+                background: #333;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                max-width: 250px;
+                z-index: 100;
+                opacity: 0;
+                transition: opacity 0.2s;
+                pointer-events: none;
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            }
+
+            .tooltip-icon:hover + .tooltip {
+                opacity: 1;
+            }
+
+            .control-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-size: 14px;
+                color: #ddd;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .slider-container {
+                position: relative;
+                margin-bottom: 10px;
+            }
+
+            .slider {
+                width: 100%;
+                height: 6px;
+                -webkit-appearance: none;
+                appearance: none;
+                background: #444;
+                border-radius: 3px;
+                outline: none;
+                cursor: pointer;
+            }
+
+            .slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: var(--primary);
+                cursor: pointer;
+                transition: var(--transition);
+                box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+            }
+
+            .slider::-webkit-slider-thumb:hover {
+                transform: scale(1.2);
+                background: var(--primary-dark);
+            }
+
+            .value-display {
+                font-size: 12px;
+                color: var(--primary);
+                text-align: right;
+                font-weight: bold;
+                margin-top: 4px;
+            }
+
+            .preset-buttons {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+
+            button {
+                padding: 10px;
+                border: none;
+                border-radius: 6px;
+                background: #333;
+                color: white;
+                cursor: pointer;
+                font-size: 14px;
+                transition: var(--transition);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            button:hover {
+                background: #444;
+            }
+
+            button.primary {
+                background: var(--primary);
+                color: #000;
+                font-weight: bold;
+            }
+
+            button.primary:hover {
+                background: var(--primary-dark);
+            }
+
+            button.active {
+                background: var(--secondary);
+                color: #000;
+            }
+
+            .network-container {
+                flex: 1;
+                background: #333;
+                border-radius: var(--border-radius);
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            #network {
+                width: 100%;
+                height: 100%;
+            }
+
+            .status-bar {
+                position: absolute;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                display: flex;
+                justify-content: space-between;
+                background: rgba(0, 0, 0, 0.6);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                z-index: 10;
+            }
+
+            .status {
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .status-indicator {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: #888;
+            }
+
+            .status-indicator.active {
+                background: #00ff00;
+                box-shadow: 0 0 6px #00ff00;
+            }
+
+            .mouse-info {
+                color: var(--accent);
+            }
+
+            .help-overlay {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                z-index: 10;
+            }
+
+            .visualization-layer {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 5;
+            }
+
+            .center-indicator {
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid var(--primary);
+                z-index: 10;
+            }
+
+            .active-zone {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 50%;
+                border: 1px dashed rgba(78, 205, 196, 0.5);
+                pointer-events: none;
+            }
+
+            .dead-zone {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 50%;
+                background: rgba(255, 107, 107, 0.1);
+                border: 1px solid rgba(255, 107, 107, 0.3);
+            }
+
+            .mouse-pointer {
+                position: absolute;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--accent);
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                transition: transform 0.1s;
+            }
+
+            .mouse-pointer.active {
+                transform: translate(-50%, -50%) scale(1.5);
+                background: #ff4444;
+            }
+
+            .keyboard-shortcuts {
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid #333;
+                font-size: 12px;
+                color: #888;
+            }
+
+            .shortcut {
+                display: inline-flex;
+                background: #333;
+                padding: 2px 6px;
+                border-radius: 4px;
+                margin-right: 5px;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>🖱️ Advanced Mouse Navigation Test Lab</h1>
+            <p class="subtitle">
+                A professional tool for testing and tuning mouse-based
+                navigation in network visualizations. Move your mouse near the
+                edges to pan automatically, adjust parameters, and find the
+                perfect settings for your application.
+            </p>
+        </header>
+
+        <div class="container">
+            <div class="controls">
+                <h3><span>🎛️</span> Navigation Controls</h3>
+
+                <button id="toggleBtn" class="primary">
+                    <span>⏵</span> Enable Mouse Navigation
+                </button>
+
+                <div class="preset-buttons">
+                    <button id="presetDefault">Default Settings</button>
+                    <button id="presetSmooth">Smooth Navigation</button>
+                    <button id="presetResponsive">Responsive</button>
+                    <button id="presetPrecision">Precision Mode</button>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <h4>Basic Parameters</h4>
+                        <div class="tooltip-icon">?</div>
+                        <div class="tooltip">
+                            These core parameters control how the navigation
+                            responds to mouse movement
+                        </div>
+                    </div>
+
+                    <div class="slider-container">
+                        <label>
+                            Sensitivity:
+                            <span id="sensitivityValue">0.05</span>
+                        </label>
+                        <input
+                            type="range"
+                            class="slider"
+                            id="sensitivitySlider"
+                            min="0.01"
+                            max="0.3"
+                            step="0.01"
+                            value="0.05"
+                        />
+                        <div class="value-display">Higher = faster panning</div>
+                    </div>
+
+                    <div class="slider-container">
+                        <label>
+                            Smoothing:
+                            <span id="smoothingValue">0.15</span>
+                        </label>
+                        <input
+                            type="range"
+                            class="slider"
+                            id="smoothingSlider"
+                            min="0.05"
+                            max="0.9"
+                            step="0.05"
+                            value="0.15"
+                        />
+                        <div class="value-display">
+                            Higher = more fluid motion
+                        </div>
+                    </div>
+
+                    <div class="slider-container">
+                        <label>
+                            Max Distance:
+                            <span id="maxDistValue">200</span>
+                        </label>
+                        <input
+                            type="range"
+                            class="slider"
+                            id="maxDistSlider"
+                            min="50"
+                            max="500"
+                            step="10"
+                            value="200"
+                        />
+                        <div class="value-display">
+                            Maximum effective mouse distance
+                        </div>
+                    </div>
+
+                    <div class="slider-container">
+                        <label>
+                            Dead Zone:
+                            <span id="deadZoneValue">30</span>
+                        </label>
+                        <input
+                            type="range"
+                            class="slider"
+                            id="deadZoneSlider"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value="30"
+                        />
+                        <div class="value-display">
+                            Center area with no panning effect
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <h4>Advanced Options</h4>
+                        <div class="tooltip-icon">?</div>
+                        <div class="tooltip">
+                            Fine-tune the navigation behavior with these
+                            advanced settings
+                        </div>
+                    </div>
+
+                    <label>
+                        <input type="checkbox" id="invertPanning" checked />
+                        Invert Panning Direction
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            id="showVisualizations"
+                            checked
+                        />
+                        Show Navigation Visualizations
+                    </label>
+
+                    <label>
+                        <input type="checkbox" id="exponentialScaling" />
+                        Exponential Scaling (more sensitive at edges)
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <button id="resetPositionBtn">
+                        <span>↺</span> Reset View Position
+                    </button>
+                    <button id="resetAllBtn">
+                        <span>🔄</span> Reset All Settings
+                    </button>
+
+                    <div class="keyboard-shortcuts">
+                        <div>Keyboard Shortcuts:</div>
+                        <span class="shortcut">Space</span> Toggle navigation
+                        <span class="shortcut">R</span> Reset view
+                        <span class="shortcut">Esc</span> Disable navigation
+                    </div>
+                </div>
+            </div>
+
+            <div class="network-container">
+                <div id="network"></div>
+
+                <div class="visualization-layer">
+                    <div class="center-indicator"></div>
+                    <div class="active-zone" id="activeZone"></div>
+                    <div class="dead-zone" id="deadZone"></div>
+                    <div class="mouse-pointer" id="mousePointer"></div>
+                </div>
+
+                <div class="help-overlay">
+                    Move mouse to edges to pan • Scroll to zoom
+                </div>
+
+                <div class="status-bar">
+                    <div class="status">
+                        <div
+                            class="status-indicator"
+                            id="statusIndicator"
+                        ></div>
+                        <span id="statusText">Mouse Navigation: Disabled</span>
+                    </div>
+                    <div class="mouse-info" id="mouseInfo">Mouse: (0, 0)</div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            class MouseNavigationSystem {
+                /**
+                 * Initialize the mouse navigation system with default parameters
+                 */
+                constructor() {
+                    // Core state
+                    this.enabled = false;
+                    this.animationFrame = null;
+                    this.lastMouseX = null;
+                    this.lastMouseY = null;
+                    this.network = null;
+                    this.container = null;
+
+                    // Navigation parameters
+                    this.params = {
+                        sensitivity: 0.05,
+                        smoothing: 0.15,
+                        maxDistance: 200,
+                        deadZone: 30,
+                        invertPanning: true,
+                        exponentialScaling: false,
+                        showVisualizations: true,
+                    };
+
+                    // Current view state
+                    this.currentPosition = { x: 0, y: 0 };
+                    this.targetPosition = { x: 0, y: 0 };
+                    this.currentScale = 1;
+
+                    // UI elements
+                    this.uiElements = {};
+
+                    // Initialize the system
+                    this.init();
+                }
+
+                /**
+                 * Initialize the system - set up UI, network, and event listeners
+                 */
+                init() {
+                    this.setupUIElements();
+                    this.createNetwork();
+                    this.setupEventListeners();
+                    this.setupKeyboardShortcuts();
+                    this.updateVisualizations();
+                }
+
+                /**
+                 * Cache all UI elements for better performance and readability
+                 */
+                setupUIElements() {
+                    this.uiElements = {
+                        toggleBtn: document.getElementById("toggleBtn"),
+                        statusIndicator:
+                            document.getElementById("statusIndicator"),
+                        statusText: document.getElementById("statusText"),
+                        mouseInfo: document.getElementById("mouseInfo"),
+                        sensitivitySlider:
+                            document.getElementById("sensitivitySlider"),
+                        sensitivityValue:
+                            document.getElementById("sensitivityValue"),
+                        smoothingSlider:
+                            document.getElementById("smoothingSlider"),
+                        smoothingValue:
+                            document.getElementById("smoothingValue"),
+                        maxDistSlider: document.getElementById("maxDistSlider"),
+                        maxDistValue: document.getElementById("maxDistValue"),
+                        deadZoneSlider:
+                            document.getElementById("deadZoneSlider"),
+                        deadZoneValue: document.getElementById("deadZoneValue"),
+                        invertPanning: document.getElementById("invertPanning"),
+                        showVisualizations:
+                            document.getElementById("showVisualizations"),
+                        exponentialScaling:
+                            document.getElementById("exponentialScaling"),
+                        activeZone: document.getElementById("activeZone"),
+                        deadZone: document.getElementById("deadZone"),
+                        mousePointer: document.getElementById("mousePointer"),
+                        resetPositionBtn:
+                            document.getElementById("resetPositionBtn"),
+                        resetAllBtn: document.getElementById("resetAllBtn"),
+                        presetDefault: document.getElementById("presetDefault"),
+                        presetSmooth: document.getElementById("presetSmooth"),
+                        presetResponsive:
+                            document.getElementById("presetResponsive"),
+                        presetPrecision:
+                            document.getElementById("presetPrecision"),
+                    };
+                }
+
+                /**
+                 * Create the network visualization with sample data
+                 */
+                createNetwork() {
+                    this.container = document.getElementById("network");
+
+                    // Create nodes with a more interesting layout
+                    const nodes = new vis.DataSet([
+                        {
+                            id: 1,
+                            label: "Central Node",
+                            x: 0,
+                            y: 0,
+                            color: "#ff6b6b",
+                            size: 35,
+                        },
+                        {
+                            id: 2,
+                            label: "Data Node",
+                            x: 200,
+                            y: 50,
+                            color: "#4ecdc4",
+                            size: 30,
+                        },
+                        {
+                            id: 3,
+                            label: "Analytics",
+                            x: 150,
+                            y: -150,
+                            color: "#45b7d1",
+                            size: 30,
+                        },
+                        {
+                            id: 4,
+                            label: "Processing",
+                            x: -150,
+                            y: -150,
+                            color: "#96ceb4",
+                            size: 30,
+                        },
+                        {
+                            id: 5,
+                            label: "Storage",
+                            x: -200,
+                            y: 50,
+                            color: "#feca57",
+                            size: 30,
+                        },
+                        {
+                            id: 6,
+                            label: "API",
+                            x: 0,
+                            y: 200,
+                            color: "#a55eea",
+                            size: 30,
+                        },
+                        {
+                            id: 7,
+                            label: "Client",
+                            x: 300,
+                            y: 150,
+                            color: "#1dd1a1",
+                            size: 25,
+                        },
+                        {
+                            id: 8,
+                            label: "Server",
+                            x: -300,
+                            y: 150,
+                            color: "#54a0ff",
+                            size: 25,
+                        },
+                        {
+                            id: 9,
+                            label: "Database",
+                            x: 250,
+                            y: -250,
+                            color: "#ff9f43",
+                            size: 25,
+                        },
+                        {
+                            id: 10,
+                            label: "Cache",
+                            x: -250,
+                            y: -250,
+                            color: "#ff6348",
+                            size: 25,
+                        },
+                    ]);
+
+                    // Create edges with varied properties
+                    const edges = new vis.DataSet([
+                        { from: 1, to: 2, width: 3 },
+                        { from: 1, to: 3, width: 3 },
+                        { from: 1, to: 4, width: 3 },
+                        { from: 1, to: 5, width: 3 },
+                        { from: 1, to: 6, width: 3 },
+                        { from: 2, to: 7, width: 2, dashes: true },
+                        { from: 5, to: 8, width: 2, dashes: true },
+                        { from: 3, to: 9, width: 2, dashes: true },
+                        { from: 4, to: 10, width: 2, dashes: true },
+                        { from: 2, to: 3, width: 1.5 },
+                        { from: 3, to: 4, width: 1.5 },
+                        { from: 4, to: 5, width: 1.5 },
+                        { from: 5, to: 2, width: 1.5 },
+                    ]);
+
+                    const options = {
+                        physics: { enabled: false },
+                        nodes: {
+                            shape: "dot",
+                            size: 25,
+                            font: {
+                                size: 14,
+                                color: "white",
+                                strokeWidth: 2,
+                                strokeColor: "rgba(0,0,0,0.3)",
+                            },
+                            borderWidth: 2,
+                            borderWidthSelected: 3,
+                            color: {
+                                highlight: {
+                                    border: "#ffffff",
+                                    background: "#ff9f43",
+                                },
+                            },
+                        },
+                        edges: {
+                            color: {
+                                color: "#848484",
+                                highlight: "#ffffff",
+                            },
+                            width: 2,
+                            smooth: {
+                                type: "continuous",
+                                roundness: 0.5,
+                            },
+                        },
+                        interaction: {
+                            zoomView: true,
+                            navigationButtons: true,
+                            keyboard: {
+                                enabled: true,
+                                speed: { x: 10, y: 10, zoom: 0.05 },
+                            },
+                        },
+                        manipulation: {
+                            enabled: false,
+                        },
+                    };
+
+                    this.network = new vis.Network(
+                        this.container,
+                        { nodes, edges },
+                        options,
+                    );
+
+                    // Initialize view position after network settles
+                    setTimeout(() => {
+                        const v = this.network.getViewPosition();
+                        this.currentPosition = { ...v };
+                        this.targetPosition = { ...v };
+                        this.currentScale = this.network.getScale();
+                    }, 100);
+                }
+
+                /**
+                 * Set up all event listeners for UI controls and mouse navigation
+                 */
+                setupEventListeners() {
+                    const debounce = (fn, wait) => {
+                        let timeout;
+                        return function (...args) {
+                            clearTimeout(timeout);
+                            timeout = setTimeout(
+                                () => fn.apply(this, args),
+                                wait,
+                            );
+                        };
+                    };
+
+                    // Mouse movement tracking
+                    this.container.addEventListener("mousemove", (e) => {
+                        if (!this.container) return;
+
+                        const rect = this.container.getBoundingClientRect();
+                        const mx = e.clientX - rect.left;
+                        const my = e.clientY - rect.top;
+
+                        this.lastMouseX = mx;
+                        this.lastMouseY = my;
+
+                        // Update mouse info display
+                        this.uiElements.mouseInfo.textContent = `Mouse: (${Math.round(mx)}, ${Math.round(my)})`;
+
+                        // Update visualizations
+                        if (this.params.showVisualizations) {
+                            this.updateMousePointer(mx, my);
+                        }
+
+                        // Start animation if enabled and not already running
+                        if (this.enabled && !this.animationFrame) {
+                            this.animationFrame = requestAnimationFrame(() =>
+                                this.animate(),
+                            );
+                        }
+                    });
+
+                    // Mouse leave handling
+                    this.container.addEventListener("mouseleave", () => {
+                        this.lastMouseX = null;
+                        this.lastMouseY = null;
+                        this.uiElements.mouseInfo.textContent =
+                            "Mouse: Outside";
+
+                        if (this.params.showVisualizations) {
+                            this.uiElements.mousePointer.classList.remove(
+                                "active",
+                            );
+                        }
+                    });
+
+                    // Zoom handling with better constraints
+                    this.container.addEventListener(
+                        "wheel",
+                        (e) => {
+                            if (e.ctrlKey || e.metaKey) return; // Don't interfere with browser zoom
+
+                            e.preventDefault();
+                            const currentScale = this.network.getScale();
+                            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                            const newScale = Math.min(
+                                Math.max(currentScale * zoomFactor, 0.05),
+                                10,
+                            );
+
+                            this.network.moveTo({
+                                scale: newScale,
+                                animation: {
+                                    duration: 150,
+                                    easingFunction: "easeOutQuad",
+                                },
+                            });
+
+                            this.currentScale = newScale;
+                        },
+                        { passive: false },
+                    );
+
+                    // Control sliders with debounced updates
+                    this.uiElements.sensitivitySlider.addEventListener(
+                        "input",
+                        debounce(this.handleSensitivityChange.bind(this), 50),
+                    );
+
+                    this.uiElements.smoothingSlider.addEventListener(
+                        "input",
+                        debounce(this.handleSmoothingChange.bind(this), 50),
+                    );
+
+                    this.uiElements.maxDistSlider.addEventListener(
+                        "input",
+                        debounce(this.handleMaxDistanceChange.bind(this), 50),
+                    );
+
+                    this.uiElements.deadZoneSlider.addEventListener(
+                        "input",
+                        debounce(this.handleDeadZoneChange.bind(this), 50),
+                    );
+
+                    // Checkbox toggles
+                    this.uiElements.invertPanning.addEventListener(
+                        "change",
+                        (e) => (this.params.invertPanning = e.target.checked),
+                    );
+
+                    this.uiElements.showVisualizations.addEventListener(
+                        "change",
+                        (e) => {
+                            this.params.showVisualizations = e.target.checked;
+                            this.uiElements.visualizationLayer.style.display = e
+                                .target.checked
+                                ? "block"
+                                : "none";
+                            this.updateVisualizations();
+                        },
+                    );
+
+                    this.uiElements.exponentialScaling.addEventListener(
+                        "change",
+                        (e) =>
+                            (this.params.exponentialScaling = e.target.checked),
+                    );
+
+                    // Button actions
+                    this.uiElements.toggleBtn.addEventListener("click", () =>
+                        this.toggle(),
+                    );
+
+                    this.uiElements.resetPositionBtn.addEventListener(
+                        "click",
+                        () => this.resetPosition(),
+                    );
+
+                    this.uiElements.resetAllBtn.addEventListener("click", () =>
+                        this.resetAll(),
+                    );
+
+                    // Preset buttons
+                    this.uiElements.presetDefault.addEventListener(
+                        "click",
+                        () => this.applyPreset("default"),
+                    );
+
+                    this.uiElements.presetSmooth.addEventListener("click", () =>
+                        this.applyPreset("smooth"),
+                    );
+
+                    this.uiElements.presetResponsive.addEventListener(
+                        "click",
+                        () => this.applyPreset("responsive"),
+                    );
+
+                    this.uiElements.presetPrecision.addEventListener(
+                        "click",
+                        () => this.applyPreset("precision"),
+                    );
+                }
+
+                /**
+                 * Set up keyboard shortcuts for common actions
+                 */
+                setupKeyboardShortcuts() {
+                    document.addEventListener("keydown", (e) => {
+                        // Only process if not in an input field
+                        if (document.activeElement.tagName === "INPUT") return;
+
+                        switch (e.key.toLowerCase()) {
+                            case " ":
+                                e.preventDefault();
+                                this.toggle();
+                                break;
+                            case "r":
+                                e.preventDefault();
+                                this.resetPosition();
+                                break;
+                            case "escape":
+                                e.preventDefault();
+                                if (this.enabled) this.toggle();
+                                break;
+                        }
+                    });
+                }
+
+                /**
+                 * Main animation loop for smooth panning
+                 */
+                animate() {
+                    if (!this.enabled) {
+                        this.animationFrame = null;
+                        return;
+                    }
+
+                    // Only pan if we have valid mouse coordinates
+                    if (this.lastMouseX !== null && this.lastMouseY !== null) {
+                        const rect = this.container.getBoundingClientRect();
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+
+                        // Calculate distance from center
+                        let dx = this.lastMouseX - centerX;
+                        let dy = this.lastMouseY - centerY;
+                        const distance = Math.hypot(dx, dy);
+
+                        // Apply dead zone
+                        let effectiveDistance = Math.max(
+                            0,
+                            distance - this.params.deadZone,
+                        );
+
+                        // Apply exponential scaling if enabled
+                        if (
+                            this.params.exponentialScaling &&
+                            effectiveDistance > 0
+                        ) {
+                            effectiveDistance =
+                                (Math.pow(effectiveDistance, 1.3) /
+                                    Math.pow(rect.width * 0.4, 0.3)) *
+                                1.5;
+                        }
+
+                        // Apply max distance constraint
+                        if (effectiveDistance > this.params.maxDistance) {
+                            const factor =
+                                this.params.maxDistance / effectiveDistance;
+                            dx *= factor;
+                            dy *= factor;
+                            effectiveDistance = this.params.maxDistance;
+                        }
+
+                        // Calculate movement vector
+                        const directionFactor = this.params.invertPanning
+                            ? -1
+                            : 1;
+                        const scale = this.network.getScale();
+                        const moveFactor =
+                            this.params.sensitivity * (effectiveDistance / 100);
+
+                        // Convert pixel movement to graph coordinates
+                        const graphDx = (dx * moveFactor) / scale;
+                        const graphDy = (dy * moveFactor) / scale;
+
+                        // Update target position
+                        this.targetPosition.x =
+                            this.currentPosition.x + directionFactor * graphDx;
+                        this.targetPosition.y =
+                            this.currentPosition.y + directionFactor * graphDy;
+                    }
+
+                    // Smooth interpolation toward target
+                    const nx =
+                        this.currentPosition.x +
+                        (this.targetPosition.x - this.currentPosition.x) *
+                            this.params.smoothing;
+                    const ny =
+                        this.currentPosition.y +
+                        (this.targetPosition.y - this.currentPosition.y) *
+                            this.params.smoothing;
+
+                    // Update network view
+                    this.network.moveTo({
+                        position: { x: nx, y: ny },
+                        animation: false,
+                    });
+
+                    // Update current position
+                    this.currentPosition.x = nx;
+                    this.currentPosition.y = ny;
+
+                    // Check if we need to continue animating
+                    const diffX = this.targetPosition.x - nx;
+                    const diffY = this.targetPosition.y - ny;
+                    const distance = Math.hypot(diffX, diffY);
+
+                    if (distance > 0.3) {
+                        this.animationFrame = requestAnimationFrame(() =>
+                            this.animate(),
+                        );
+                    } else {
+                        this.animationFrame = null;
+                    }
+                }
+
+                /**
+                 * Toggle the mouse navigation system on/off
+                 */
+                toggle() {
+                    this.enabled = !this.enabled;
+
+                    if (this.enabled) {
+                        // Update UI
+                        this.uiElements.toggleBtn.innerHTML =
+                            "<span>⏹</span> Disable Navigation";
+                        this.uiElements.toggleBtn.classList.add("active");
+                        this.uiElements.statusText.textContent =
+                            "Mouse Navigation: Enabled";
+                        this.uiElements.statusIndicator.classList.add("active");
+
+                        // Seed positions to current view
+                        const v = this.network.getViewPosition();
+                        this.currentPosition = { ...v };
+                        this.targetPosition = { ...v };
+                        this.currentScale = this.network.getScale();
+
+                        // Start animation if not already running
+                        if (!this.animationFrame) {
+                            this.animationFrame = requestAnimationFrame(() =>
+                                this.animate(),
+                            );
+                        }
+                    } else {
+                        // Update UI
+                        this.uiElements.toggleBtn.innerHTML =
+                            "<span>⏵</span> Enable Mouse Navigation";
+                        this.uiElements.toggleBtn.classList.remove("active");
+                        this.uiElements.statusText.textContent =
+                            "Mouse Navigation: Disabled";
+                        this.uiElements.statusIndicator.classList.remove(
+                            "active",
+                        );
+
+                        // Cancel animation
+                        if (this.animationFrame) {
+                            cancelAnimationFrame(this.animationFrame);
+                            this.animationFrame = null;
+                        }
+                    }
+                }
+
+                /**
+                 * Reset the view to the initial position
+                 */
+                resetPosition() {
+                    this.network.fit({
+                        animation: {
+                            duration: 400,
+                            easingFunction: "easeInOutQuad",
+                        },
+                    });
+
+                    setTimeout(() => {
+                        const v = this.network.getViewPosition();
+                        this.currentPosition = { ...v };
+                        this.targetPosition = { ...v };
+                        this.currentScale = this.network.getScale();
+                    }, 450);
+                }
+
+                /**
+                 * Reset all settings to default values
+                 */
+                resetAll() {
+                    // Reset parameters
+                    this.params = {
+                        sensitivity: 0.05,
+                        smoothing: 0.15,
+                        maxDistance: 200,
+                        deadZone: 30,
+                        invertPanning: true,
+                        exponentialScaling: false,
+                        showVisualizations: true,
+                    };
+
+                    // Update UI controls
+                    this.uiElements.sensitivitySlider.value =
+                        this.params.sensitivity;
+                    this.uiElements.sensitivityValue.textContent =
+                        this.params.sensitivity.toFixed(2);
+
+                    this.uiElements.smoothingSlider.value =
+                        this.params.smoothing;
+                    this.uiElements.smoothingValue.textContent =
+                        this.params.smoothing.toFixed(2);
+
+                    this.uiElements.maxDistSlider.value =
+                        this.params.maxDistance;
+                    this.uiElements.maxDistValue.textContent =
+                        this.params.maxDistance;
+
+                    this.uiElements.deadZoneSlider.value = this.params.deadZone;
+                    this.uiElements.deadZoneValue.textContent =
+                        this.params.deadZone;
+
+                    this.uiElements.invertPanning.checked =
+                        this.params.invertPanning;
+                    this.uiElements.exponentialScaling.checked =
+                        this.params.exponentialScaling;
+                    this.uiElements.showVisualizations.checked =
+                        this.params.showVisualizations;
+
+                    // Reset view
+                    this.resetPosition();
+
+                    // Update visualizations
+                    this.updateVisualizations();
+                }
+
+                /**
+                 * Apply a preset configuration
+                 */
+                applyPreset(preset) {
+                    let config;
+
+                    switch (preset) {
+                        case "default":
+                            config = {
+                                sensitivity: 0.05,
+                                smoothing: 0.15,
+                                maxDistance: 200,
+                                deadZone: 30,
+                                exponentialScaling: false,
+                            };
+                            break;
+                        case "smooth":
+                            config = {
+                                sensitivity: 0.03,
+                                smoothing: 0.08,
+                                maxDistance: 250,
+                                deadZone: 40,
+                                exponentialScaling: true,
+                            };
+                            break;
+                        case "responsive":
+                            config = {
+                                sensitivity: 0.08,
+                                smoothing: 0.25,
+                                maxDistance: 180,
+                                deadZone: 20,
+                                exponentialScaling: false,
+                            };
+                            break;
+                        case "precision":
+                            config = {
+                                sensitivity: 0.02,
+                                smoothing: 0.05,
+                                maxDistance: 150,
+                                deadZone: 50,
+                                exponentialScaling: false,
+                            };
+                            break;
+                        default:
+                            config = {
+                                sensitivity: 0.05,
+                                smoothing: 0.15,
+                                maxDistance: 200,
+                                deadZone: 30,
+                                exponentialScaling: false,
+                            };
+                    }
+
+                    // Update parameters
+                    this.params.sensitivity = config.sensitivity;
+                    this.params.smoothing = config.smoothing;
+                    this.params.maxDistance = config.maxDistance;
+                    this.params.deadZone = config.deadZone;
+                    this.params.exponentialScaling = config.exponentialScaling;
+
+                    // Update UI
+                    this.uiElements.sensitivitySlider.value =
+                        config.sensitivity;
+                    this.uiElements.sensitivityValue.textContent =
+                        config.sensitivity.toFixed(2);
+
+                    this.uiElements.smoothingSlider.value = config.smoothing;
+                    this.uiElements.smoothingValue.textContent =
+                        config.smoothing.toFixed(2);
+
+                    this.uiElements.maxDistSlider.value = config.maxDistance;
+                    this.uiElements.maxDistValue.textContent =
+                        config.maxDistance;
+
+                    this.uiElements.deadZoneSlider.value = config.deadZone;
+                    this.uiElements.deadZoneValue.textContent = config.deadZone;
+
+                    this.uiElements.exponentialScaling.checked =
+                        config.exponentialScaling;
+
+                    // Update visualizations
+                    this.updateVisualizations();
+                }
+
+                /**
+                 * Update the visual indicators for navigation zones
+                 */
+                updateVisualizations() {
+                    if (!this.container || !this.params.showVisualizations)
+                        return;
+
+                    const rect = this.container.getBoundingClientRect();
+                    const radius = Math.min(rect.width, rect.height) * 0.4;
+
+                    // Update active zone
+                    this.uiElements.activeZone.style.width = `${this.params.maxDistance * 2}px`;
+                    this.uiElements.activeZone.style.height = `${this.params.maxDistance * 2}px`;
+
+                    // Update dead zone
+                    this.uiElements.deadZone.style.width = `${this.params.deadZone * 2}px`;
+                    this.uiElements.deadZone.style.height = `${this.params.deadZone * 2}px`;
+                }
+
+                /**
+                 * Update the mouse pointer visualization
+                 */
+                updateMousePointer(x, y) {
+                    this.uiElements.mousePointer.style.left = `${x}px`;
+                    this.uiElements.mousePointer.style.top = `${y}px`;
+                    this.uiElements.mousePointer.classList.add("active");
+                }
+
+                // Parameter change handlers
+                handleSensitivityChange(e) {
+                    this.params.sensitivity = parseFloat(e.target.value);
+                    this.uiElements.sensitivityValue.textContent =
+                        this.params.sensitivity.toFixed(2);
+                }
+
+                handleSmoothingChange(e) {
+                    this.params.smoothing = parseFloat(e.target.value);
+                    this.uiElements.smoothingValue.textContent =
+                        this.params.smoothing.toFixed(2);
+                }
+
+                handleMaxDistanceChange(e) {
+                    this.params.maxDistance = parseInt(e.target.value);
+                    this.uiElements.maxDistValue.textContent =
+                        this.params.maxDistance;
+                    this.updateVisualizations();
+                }
+
+                handleDeadZoneChange(e) {
+                    this.params.deadZone = parseInt(e.target.value);
+                    this.uiElements.deadZoneValue.textContent =
+                        this.params.deadZone;
+                    this.updateVisualizations();
+                }
+            }
+
+            // Initialize the system when the page loads
+            document.addEventListener("DOMContentLoaded", () => {
+                window.mouseNav = new MouseNavigationSystem();
+
+                // Add resize handler for better visualization updates
+                window.addEventListener("resize", () => {
+                    if (
+                        window.mouseNav &&
+                        window.mouseNav.params.showVisualizations
+                    ) {
+                        window.mouseNav.updateVisualizations();
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

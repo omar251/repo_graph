@@ -974,6 +974,158 @@
             border-color: #a8edea !important;
         }
 
+        /* Mouse Navigation Controls */
+        .mouse-nav-controls .slider-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .mouse-nav-controls .slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #444;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .mouse-nav-controls .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.2);
+        }
+
+        .mouse-nav-controls .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--accent-purple);
+        }
+
+        .mouse-nav-controls .value-display {
+            font-size: 12px;
+            color: var(--accent-blue);
+            text-align: right;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .mouse-nav-controls .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .mouse-nav-controls button {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: #333;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mouse-nav-controls button:hover {
+            background: #444;
+        }
+
+        .mouse-nav-controls button.primary {
+            background: var(--accent-blue);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .mouse-nav-controls button.primary:hover {
+            background: var(--accent-purple);
+        }
+
+        .mouse-nav-controls button.active {
+            background: var(--accent-red);
+            color: #000;
+        }
+
+        /* Mouse Navigation Controls */
+        .mouse-nav-controls {
+            margin-bottom: 20px;
+        }
+
+        .mouse-nav-toggle-btn {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .mouse-nav-toggle-btn:hover {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        .mouse-nav-toggle-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-color: #ff6b6b;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn:hover {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+        }
+
+        .mode-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+        }
+
         /* Animation for page load */
         @keyframes fadeInUp {
             from {
@@ -984,6 +1136,59 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+        .visualization-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .center-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--primary);
+            z-index: 10;
+        }
+        .active-zone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px dashed rgba(78, 205, 196, 0.5);
+            pointer-events: none;
+        }
+        .dead-zone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        .mouse-pointer {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent);
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            transition: transform 0.1s;
+        }
+        .mouse-pointer.active {
+            transform: translate(-50%, -50%) scale(1.5);
+            background: #ff4444;
         }
 
         .main-container {
@@ -1172,6 +1377,85 @@
                     </button>
                 </div>
 
+                <h3><i class="fas fa-mouse-pointer"></i> Mouse Nav</h3>
+                <div class="mouse-nav-controls">
+                    <button id="toggleBtn" class="mouse-nav-toggle-btn">
+                        <i class="fas fa-mouse"></i> Enable Mouse Nav
+                    </button>
+
+                    <div class="preset-buttons">
+                        <button id="presetDefault">Default</button>
+                        <button id="presetSmooth">Smooth</button>
+                        <button id="presetResponsive">Responsive</button>
+                        <button id="presetPrecision">Precision</button>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <h4>Basic Parameters</h4>
+                        </div>
+
+                        <div class="slider-container">
+                            <label>
+                                Sensitivity:
+                                <span id="sensitivityValue">0.05</span>
+                            </label>
+                            <input type="range" class="slider" id="sensitivitySlider" min="0.01" max="0.3" step="0.01" value="0.05" />
+                        </div>
+
+                        <div class="slider-container">
+                            <label>
+                                Smoothing:
+                                <span id="smoothingValue">0.15</span>
+                            </label>
+                            <input type="range" class="slider" id="smoothingSlider" min="0.05" max="0.9" step="0.05" value="0.15" />
+                        </div>
+
+                        <div class="slider-container">
+                            <label>
+                                Max Distance:
+                                <span id="maxDistValue">200</span>
+                            </label>
+                            <input type="range" class="slider" id="maxDistSlider" min="50" max="500" step="10" value="200" />
+                        </div>
+
+                        <div class="slider-container">
+                            <label>
+                                Dead Zone:
+                                <span id="deadZoneValue">30</span>
+                            </label>
+                            <input type="range" class="slider" id="deadZoneSlider" min="0" max="100" step="5" value="30" />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <h4>Advanced Options</h4>
+                        </div>
+                        <label>
+                            <input type="checkbox" id="invertPanning" checked />
+                            Invert Panning
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showVisualizations" checked />
+                            Show Visualizations
+                        </label>
+                        <label>
+                            <input type="checkbox" id="exponentialScaling" />
+                            Exponential Scaling
+                        </label>
+                    </div>
+
+                    <div class="control-group">
+                        <button id="resetPositionBtn">
+                            <span>↺</span> Reset View
+                        </button>
+                        <button id="resetAllBtn">
+                            <span>🔄</span> Reset Settings
+                        </button>
+                    </div>
+                </div>
+
                 <h3><i class="fas fa-info"></i> Data</h3>
                 <div id="data-info" style="background: var(--bg-secondary) !important; color: var(--text-secondary) !important; border: 1px solid var(--border-primary) !important; border-radius: 8px !important; padding: 12px !important; font-size: 0.85rem !important; line-height: 1.4 !important;">
                     No data loaded
@@ -1185,6 +1469,12 @@
                 <div>Loading network...</div>
             </div>
             <div id="network"></div>
+            <div class="visualization-layer">
+                <div class="center-indicator"></div>
+                <div class="active-zone" id="activeZone"></div>
+                <div class="dead-zone" id="deadZone"></div>
+                <div class="mouse-pointer" id="mousePointer"></div>
+            </div>
         </div>
     </div>
 
@@ -1293,6 +1583,48 @@
             if (viewer) {
                 // TODO: Implement dependency tree export
                 viewer.showStatus('📄 Dependency tree export coming soon!', 'success');
+            }
+        }
+
+        function toggleMouseNavigation() {
+            if (viewer) {
+                viewer.toggleMouseNavigation();
+                
+                // Update button state
+                const btn = document.querySelector('.mouse-nav-toggle-btn');
+                const icon = btn.querySelector('i');
+                
+                if (btn.classList.contains('active')) {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-mouse"></i> Enable Mouse Nav';
+                } else {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-mouse"></i> Disable Mouse Nav';
+                }
+            }
+        }
+
+        function setMouseSensitivity(level) {
+            if (viewer) {
+                viewer.setMouseNavSensitivity(level);
+                
+                // Update button states
+                document.querySelectorAll('.sensitivity-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            }
+        }
+
+        function setMouseMode(mode) {
+            if (viewer) {
+                viewer.setMouseNavMode(mode);
+                
+                // Update button states
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
             }
         }
 
