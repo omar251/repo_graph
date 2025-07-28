@@ -1226,70 +1226,146 @@ class DependencyGraphViewer {
             }
         });
 
+        // Get original node data for more complete information
+        const originalNode = this.originalData?.nodes?.find(n => n.id === nodeId) || node;
+        
         // Update data info section with detailed information
         const detailsHtml = `
             <div class="node-details">
-                <h4 style="color: var(--accent-blue); margin-bottom: 8px; font-size: 1rem;">
-                    <i class="fas fa-file-code"></i> ${node.label}
-                </h4>
-                
-                ${node.path && node.path !== 'N/A' ? `
-                <div class="detail-item">
-                    <strong>Path:</strong><br>
-                    <code style="font-size: 0.8rem; word-break: break-all;">${node.path}</code>
+                <div class="node-header">
+                    <h4 style="color: var(--accent-blue); margin-bottom: 12px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-file-code" style="color: ${node.color.background};"></i>
+                        <span>${node.label}</span>
+                        <span class="type-badge" style="background: ${node.color.background}; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; margin-left: auto;">
+                            ${this.getTypeLabel(originalNode.type || 'unknown')}
+                        </span>
+                    </h4>
                 </div>
-                ` : ''}
-                
-                <div class="detail-item">
-                    <strong>Type:</strong> 
-                    <span class="type-badge" style="background: ${node.color.background}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
-                        ${this.getTypeLabel(node.type || 'unknown')}
-                    </span>
+
+                <div class="node-info-grid">
+                    ${node.path && node.path !== 'N/A' ? `
+                    <div class="info-card">
+                        <div class="info-label">
+                            <i class="fas fa-folder-open"></i> Path
+                        </div>
+                        <div class="info-value">
+                            <code style="font-size: 0.8rem; word-break: break-all; background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; display: block;">${node.path}</code>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="info-card">
+                        <div class="info-label">
+                            <i class="fas fa-network-wired"></i> Connections
+                        </div>
+                        <div class="info-value">
+                            <span class="metric-number">${connectedNodes.length}</span>
+                            <span class="metric-label">total</span>
+                        </div>
+                    </div>
+
+                    ${originalNode.size ? `
+                    <div class="info-card">
+                        <div class="info-label">
+                            <i class="fas fa-file-alt"></i> File Size
+                        </div>
+                        <div class="info-value">
+                            <span class="metric-number">${this.formatFileSize(originalNode.size)}</span>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${originalNode.dependencies !== undefined ? `
+                    <div class="info-card">
+                        <div class="info-label">
+                            <i class="fas fa-code-branch"></i> Dependencies
+                        </div>
+                        <div class="info-value">
+                            <span class="metric-number">${originalNode.dependencies}</span>
+                            <span class="metric-label">declared</span>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
-                
-                <div class="detail-item">
-                    <strong>Connections:</strong> ${connectedNodes.length}
-                </div>
-                
-                ${dependencies.length > 0 ? `
-                <div class="detail-item">
-                    <strong>Dependencies (${dependencies.length}):</strong><br>
-                    <div class="dependency-list">
-                        ${dependencies.map(dep => `<span class="dep-item">${dep}</span>`).join('')}
+
+                ${dependencies.length > 0 || dependents.length > 0 ? `
+                <div class="connections-section">
+                    <h5 style="color: var(--text-secondary); margin: 16px 0 8px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fas fa-sitemap"></i> Connection Details
+                    </h5>
+                    
+                    <div class="connections-grid">
+                        ${dependencies.length > 0 ? `
+                        <div class="connection-card outgoing">
+                            <div class="connection-header">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Dependencies (${dependencies.length})</span>
+                            </div>
+                            <div class="connection-list">
+                                ${dependencies.slice(0, 5).map(dep => `
+                                    <div class="connection-item">
+                                        <span class="connection-dot" style="background: var(--accent-blue);"></span>
+                                        <span class="connection-name">${dep}</span>
+                                    </div>
+                                `).join('')}
+                                ${dependencies.length > 5 ? `
+                                    <div class="connection-item more">
+                                        <span class="connection-dot" style="background: var(--text-muted);"></span>
+                                        <span class="connection-name">+${dependencies.length - 5} more...</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        ${dependents.length > 0 ? `
+                        <div class="connection-card incoming">
+                            <div class="connection-header">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Dependents (${dependents.length})</span>
+                            </div>
+                            <div class="connection-list">
+                                ${dependents.slice(0, 5).map(dep => `
+                                    <div class="connection-item">
+                                        <span class="connection-dot" style="background: var(--accent-green);"></span>
+                                        <span class="connection-name">${dep}</span>
+                                    </div>
+                                `).join('')}
+                                ${dependents.length > 5 ? `
+                                    <div class="connection-item more">
+                                        <span class="connection-dot" style="background: var(--text-muted);"></span>
+                                        <span class="connection-name">+${dependents.length - 5} more...</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
                 ` : ''}
                 
-                ${dependents.length > 0 ? `
-                <div class="detail-item">
-                    <strong>Dependents (${dependents.length}):</strong><br>
-                    <div class="dependency-list">
-                        ${dependents.map(dep => `<span class="dep-item">${dep}</span>`).join('')}
+                <div class="action-section">
+                    <h5 style="color: var(--text-secondary); margin: 16px 0 8px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fas fa-tools"></i> Actions
+                    </h5>
+                    <div class="action-grid">
+                        <button onclick="focusOnNode(${nodeId})" class="action-btn primary">
+                            <i class="fas fa-crosshairs"></i>
+                            <span>Focus</span>
+                        </button>
+                        <button onclick="highlightConnections(${nodeId})" class="action-btn secondary">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>Connections</span>
+                        </button>
+                        <button onclick="findAllDependencies(${nodeId})" class="action-btn dependency">
+                            <i class="fas fa-sitemap"></i>
+                            <span>All Dependencies</span>
+                        </button>
+                        <button onclick="findAllDependents(${nodeId})" class="action-btn dependent">
+                            <i class="fas fa-code-branch"></i>
+                            <span>All Dependents</span>
+                        </button>
                     </div>
-                </div>
-                ` : ''}
-                
-                ${node.size ? `
-                <div class="detail-item">
-                    <strong>File Size:</strong> ${this.formatFileSize(node.size)}
-                </div>
-                ` : ''}
-                
-                <div class="detail-actions" style="margin-top: 12px; display: flex; gap: 6px;">
-                    <button onclick="focusOnNode(${nodeId})" class="detail-btn">
-                        <i class="fas fa-crosshairs"></i> Focus
-                    </button>
-                    <button onclick="highlightConnections(${nodeId})" class="detail-btn">
-                        <i class="fas fa-project-diagram"></i> Connections
-                    </button>
-                </div>
-                <div class="detail-actions" style="margin-top: 8px; display: flex; gap: 6px;">
-                    <button onclick="findAllDependencies(${nodeId})" class="detail-btn dependency-btn">
-                        <i class="fas fa-sitemap"></i> All Dependencies
-                    </button>
-                    <button onclick="findAllDependents(${nodeId})" class="detail-btn dependent-btn">
-                        <i class="fas fa-code-branch"></i> All Dependents
-                    </button>
                 </div>
             </div>
         `;
