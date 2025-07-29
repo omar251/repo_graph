@@ -6,7 +6,7 @@ const { performance } = require("perf_hooks");
 
 // Configuration
 const CONFIG = {
-  supportedExtensions: [".js", ".jsx", ".ts", ".tsx", ".py"],
+  supportedExtensions: [".js", ".jsx", ".ts", ".tsx", ".py", ".html"],
   excludePatterns: [
     "node_modules",
     ".git",
@@ -218,6 +218,58 @@ function getJavaScriptDependencies(filePath, verbose = false) {
   }
 }
 
+// HTML dependency extraction
+function getHtmlDependencies(filePath, verbose = false) {
+  try {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const dependencies = new Set();
+
+    // Script src tags
+    const scriptRegex = /<script[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    
+    // Link href tags (CSS, etc.)
+    const linkRegex = /<link[^>]+href=["']([^"']+)["'][^>]*>/gi;
+    
+    // Iframe src tags
+    const iframeRegex = /<iframe[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    
+    // Image src tags
+    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    
+    let match;
+
+    // Extract script sources
+    while ((match = scriptRegex.exec(content)) !== null) {
+      const src = match[1];
+      if (!src.startsWith('http') && !src.startsWith('//') && !src.startsWith('data:')) {
+        dependencies.add(src);
+      }
+    }
+
+    // Extract link hrefs (CSS files)
+    while ((match = linkRegex.exec(content)) !== null) {
+      const href = match[1];
+      if (!href.startsWith('http') && !href.startsWith('//') && 
+          (href.endsWith('.css') || href.endsWith('.js'))) {
+        dependencies.add(href);
+      }
+    }
+    
+    // Extract iframe sources (other HTML files)
+    while ((match = iframeRegex.exec(content)) !== null) {
+      const src = match[1];
+      if (!src.startsWith('http') && !src.startsWith('//') && src.endsWith('.html')) {
+        dependencies.add(src);
+      }
+    }
+
+    return Array.from(dependencies);
+  } catch (error) {
+    log(`Warning: Error reading ${filePath}: ${error.message}`, verbose, true);
+    return [];
+  }
+}
+
 // Enhanced dependency extraction for Python
 function getPythonDependencies(filePath, verbose = false) {
   try {
@@ -294,14 +346,22 @@ function resolvePath(
     }
   }
 
-  if ([".js", ".jsx", ".ts", ".tsx"].includes(fileExtension)) {
-    if (dependency.startsWith("./") || dependency.startsWith("../")) {
+  if ([".js", ".jsx", ".ts", ".tsx", ".html"].includes(fileExtension)) {
+    if (dependency.startsWith("./") || dependency.startsWith("../") || dependency.startsWith("/")) {
       let resolved = path.resolve(currentDir, dependency);
 
       // If dependency already has extension, check directly
       if (path.extname(dependency)) {
         if (fs.existsSync(resolved)) {
           return resolved;
+        }
+      }
+      
+      // For HTML files, also try resolving from repo root for absolute paths
+      if (fileExtension === ".html" && dependency.startsWith("/")) {
+        const absoluteResolved = path.resolve(repoPath, dependency.substring(1));
+        if (fs.existsSync(absoluteResolved)) {
+          return absoluteResolved;
         }
       }
 
@@ -311,8 +371,11 @@ function resolvePath(
         ".jsx",
         ".ts",
         ".tsx",
+        ".html",
+        ".css",
         "/index.js",
         "/index.ts",
+        "/index.html",
       ];
       for (const ext of extensions) {
         const candidate = resolved + ext;
@@ -328,6 +391,7 @@ function resolvePath(
           "index.ts",
           "index.jsx",
           "index.tsx",
+          "index.html",
         ]) {
           const indexPath = path.join(resolved, indexFile);
           if (fs.existsSync(indexPath)) {
@@ -485,6 +549,8 @@ function main() {
       dependencies = getJavaScriptDependencies(file, options.verbose);
     } else if (fileExtension === ".py") {
       dependencies = getPythonDependencies(file, options.verbose);
+    } else if (fileExtension === ".html") {
+      dependencies = getHtmlDependencies(file, options.verbose);
     }
 
     log(
@@ -627,6 +693,7 @@ module.exports = {
   getFilesInDir,
   getJavaScriptDependencies,
   getPythonDependencies,
+  getHtmlDependencies,
   resolvePath,
   main,
 };
