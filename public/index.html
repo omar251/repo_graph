@@ -1535,12 +1535,7 @@
                     <i class="fas fa-file-upload"></i> Upload JSON File
                 </button>
             </div>
-            <div class="file-input-wrapper">
-                <input type="file" id="folderInput" webkitdirectory directory multiple onchange="analyzeSelectedRepository(event)">
-                <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()">
-                    <i class="fas fa-folder-open"></i> Browse Repository
-                </button>
-            </div>
+
             <div class="repo-path-wrapper">
                 <input type="text" id="repoPathInput" placeholder="Enter repository path..." class="repo-path-input">
                 <button class="btn btn-secondary" onclick="analyzeRepositoryPath()">
