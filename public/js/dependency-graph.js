@@ -1528,45 +1528,54 @@ class DependencyGraphViewer {
     
     displayCodePreview(node, content, filePath) {
         const lines = content.split('\n');
-        const maxLines = 50;
-        const truncated = lines.length > maxLines;
-        const displayLines = truncated ? lines.slice(0, maxLines) : lines;
+        const codeOverlay = document.getElementById('code-overlay');
+        const codeTitle = document.getElementById('code-title');
+        const codeContent = document.getElementById('code-content');
         
-        const previewHtml = `
-            <div class="code-preview">
-                <div class="code-header">
-                    <h4 style="color: var(--accent-blue); margin-bottom: 8px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-file-code" style="color: ${node.color.background};"></i>
-                        <span>${node.label}</span>
-                        <button onclick="viewer.showNodeDetails(${node.id})" class="btn-back" style="margin-left: auto; padding: 4px 8px; border: 1px solid var(--border-primary); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 0.75rem; cursor: pointer;">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                    </h4>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
-                        ${filePath} ${truncated ? `(showing first ${maxLines} lines of ${lines.length})` : `(${lines.length} lines)`}
-                    </div>
-                </div>
-                
-                <div class="code-content" style="
-                    background: var(--bg-primary);
-                    border: 1px solid var(--border-primary);
-                    border-radius: 8px;
-                    padding: 12px;
-                    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-                    font-size: 0.8rem;
-                    line-height: 1.4;
-                    max-height: 400px;
-                    overflow-y: auto;
-                    white-space: pre-wrap;
-                    color: var(--text-primary);
-                ">
-${displayLines.map((line, i) => `<div style="display: flex;"><span style="color: var(--text-muted); width: 30px; text-align: right; margin-right: 12px; user-select: none;">${i + 1}</span><span>${this.escapeHtml(line) || ' '}</span></div>`).join('')}
-                    ${truncated ? `<div style="color: var(--text-muted); text-align: center; margin-top: 12px; font-style: italic;">... ${lines.length - maxLines} more lines</div>` : ''}
-                </div>
-            </div>
+        // Update title
+        codeTitle.innerHTML = `
+            <i class="fas fa-file-code" style="color: ${node.color.background};"></i>
+            ${node.label}
+            <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">
+                (${lines.length} lines) ${filePath}
+            </span>
         `;
         
-        document.getElementById('data-info').innerHTML = previewHtml;
+        // Generate code content with line numbers
+        const codeHtml = lines.map((line, i) => `
+            <div class="code-line">
+                <span class="line-number">${i + 1}</span>
+                <span class="line-content">${this.escapeHtml(line) || ' '}</span>
+            </div>
+        `).join('');
+        
+        codeContent.innerHTML = codeHtml;
+        
+        // Show overlay
+        codeOverlay.classList.remove('hidden');
+        
+        // Setup close handler
+        const closeBtn = document.getElementById('close-code');
+        closeBtn.onclick = () => {
+            codeOverlay.classList.add('hidden');
+        };
+        
+        // Close on overlay click
+        codeOverlay.onclick = (e) => {
+            if (e.target === codeOverlay) {
+                codeOverlay.classList.add('hidden');
+            }
+        };
+        
+        // Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                codeOverlay.classList.add('hidden');
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
         this.showStatus(`📄 Code preview: ${node.label}`, 'success');
     }
     
