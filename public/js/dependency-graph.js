@@ -2120,14 +2120,16 @@ class DependencyGraphViewer {
         
         visited.add(nodeId);
         const chain = [];
+        const seenAtDepth = new Set();
         
         this.edges.get().forEach(edge => {
             const targetId = direction === 'down' ? 
                 (edge.from === nodeId ? edge.to : null) :
                 (edge.to === nodeId ? edge.from : null);
                 
-            if (targetId && !visited.has(targetId)) {
+            if (targetId && !visited.has(targetId) && !seenAtDepth.has(targetId)) {
                 const targetNode = this.nodes.get(targetId);
+                seenAtDepth.add(targetId);
                 chain.push({ node: targetNode, depth: depth + 1 });
                 
                 // Recursively find deeper connections
@@ -2136,7 +2138,18 @@ class DependencyGraphViewer {
             }
         });
         
-        return chain;
+        // Remove duplicates by node ID
+        const uniqueChain = [];
+        const seenIds = new Set();
+        
+        chain.forEach(item => {
+            if (!seenIds.has(item.node.id)) {
+                seenIds.add(item.node.id);
+                uniqueChain.push(item);
+            }
+        });
+        
+        return uniqueChain;
     }
     
     highlightDirectConnections(nodeId, dependencies, dependents) {
