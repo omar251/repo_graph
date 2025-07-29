@@ -1480,11 +1480,11 @@ class DependencyGraphViewer {
                         </button>
                         <button onclick="showDependencyChain(${nodeId})" class="action-btn dependency">
                             <i class="fas fa-arrow-down"></i>
-                            <span>What I Use</span>
+                            <span>Parents</span>
                         </button>
                         <button onclick="showDependentChain(${nodeId})" class="action-btn dependent">
                             <i class="fas fa-arrow-up"></i>
-                            <span>What Uses Me</span>
+                            <span>Children</span>
                         </button>
                         <button onclick="showCodePreview(${nodeId})" class="action-btn primary" style="grid-column: span 2;">
                             <i class="fas fa-file-code"></i>
@@ -1811,7 +1811,7 @@ class DependencyGraphViewer {
         const dependencyChain = this.buildDependencyChain(nodeId, 'down');
         
         if (dependencyChain.length === 0) {
-            this.showStatus(`📦 ${selectedNode.label} doesn't use any other files`, 'success');
+            this.showStatus(`👨 ${selectedNode.label} has no parents`, 'success');
             return;
         }
         
@@ -1819,9 +1819,9 @@ class DependencyGraphViewer {
         this.highlightChain(nodeId, dependencyChain, 'dependency');
         
         // Show chain analysis
-        this.showChainAnalysis(nodeId, dependencyChain, 'dependency');
+        this.showChainAnalysis(nodeId, dependencyChain, 'parents');
         
-        this.showStatus(`📦 ${selectedNode.label} uses ${dependencyChain.length} files (including indirect)`, 'success');
+        this.showStatus(`👨 ${selectedNode.label} has ${dependencyChain.length} parents (all ancestors)`, 'success');
     }
 
     showDependentChain(nodeId) {
@@ -1829,7 +1829,7 @@ class DependencyGraphViewer {
         const dependentChain = this.buildDependencyChain(nodeId, 'up');
         
         if (dependentChain.length === 0) {
-            this.showStatus(`🔗 ${selectedNode.label} is not used by any other files`, 'success');
+            this.showStatus(`👶 ${selectedNode.label} has no children`, 'success');
             return;
         }
         
@@ -1837,9 +1837,9 @@ class DependencyGraphViewer {
         this.highlightChain(nodeId, dependentChain, 'dependent');
         
         // Show chain analysis
-        this.showChainAnalysis(nodeId, dependentChain, 'dependent');
+        this.showChainAnalysis(nodeId, dependentChain, 'children');
         
-        this.showStatus(`🔗 ${selectedNode.label} is used by ${dependentChain.length} files (including indirect)`, 'success');
+        this.showStatus(`👶 ${selectedNode.label} has ${dependentChain.length} children (all descendants)`, 'success');
     }
 
     getAllDependencies(nodeId, visited = new Set(), depth = 0) {
@@ -2208,7 +2208,7 @@ class DependencyGraphViewer {
                 
                 ${dependencies.length > 0 ? `
                 <div class="connection-group">
-                    <h5 style="color: #4ecdc4;">📦 This file uses (${dependencies.length}):</h5>
+                    <h5 style="color: #4ecdc4;">👨 Parents (${dependencies.length}):</h5>
                     <div class="connection-list">
                         ${dependencies.map(({ node }) => `
                             <div class="connection-item" onclick="focusOnNode(${node.id})">
@@ -2222,7 +2222,7 @@ class DependencyGraphViewer {
                 
                 ${dependents.length > 0 ? `
                 <div class="connection-group">
-                    <h5 style="color: #45b7d1;">🔗 Used by (${dependents.length}):</h5>
+                    <h5 style="color: #45b7d1;">👶 Children (${dependents.length}):</h5>
                     <div class="connection-list">
                         ${dependents.map(({ node }) => `
                             <div class="connection-item" onclick="focusOnNode(${node.id})">
@@ -2248,8 +2248,8 @@ class DependencyGraphViewer {
             chainByDepth[depth].push(node);
         });
         
-        const title = type === 'dependency' ? 'What I Use Chain' : 'What Uses Me Chain';
-        const icon = type === 'dependency' ? '📦' : '🔗';
+        const title = type === 'parents' ? 'Parents Tree' : 'Children Tree';
+        const icon = type === 'parents' ? '👨' : '👶';
         
         const analysisHtml = `
             <div class="chain-analysis">
