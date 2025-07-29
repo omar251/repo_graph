@@ -1474,17 +1474,17 @@ class DependencyGraphViewer {
                             <i class="fas fa-crosshairs"></i>
                             <span>Focus</span>
                         </button>
-                        <button onclick="highlightConnections(${nodeId})" class="action-btn secondary">
-                            <i class="fas fa-project-diagram"></i>
-                            <span>Connections</span>
+                        <button onclick="showDirectConnections(${nodeId})" class="action-btn secondary">
+                            <i class="fas fa-link"></i>
+                            <span>Direct Links</span>
                         </button>
-                        <button onclick="findAllDependencies(${nodeId})" class="action-btn dependency">
-                            <i class="fas fa-sitemap"></i>
-                            <span>All Dependencies</span>
+                        <button onclick="showDependencyChain(${nodeId})" class="action-btn dependency">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>What I Use</span>
                         </button>
-                        <button onclick="findAllDependents(${nodeId})" class="action-btn dependent">
-                            <i class="fas fa-code-branch"></i>
-                            <span>All Dependents</span>
+                        <button onclick="showDependentChain(${nodeId})" class="action-btn dependent">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>What Uses Me</span>
                         </button>
                         <button onclick="showCodePreview(${nodeId})" class="action-btn primary" style="grid-column: span 2;">
                             <i class="fas fa-file-code"></i>
@@ -1608,31 +1608,34 @@ class DependencyGraphViewer {
         this.showStatus('🎯 Focused on node', 'success');
     }
 
-    highlightConnections(nodeId) {
-        const connectedNodes = this.network.getConnectedNodes(nodeId);
-        const connectedEdges = this.network.getConnectedEdges(nodeId);
+    showDirectConnections(nodeId) {
         const selectedNode = this.nodes.get(nodeId);
+        const dependencies = [];
+        const dependents = [];
         
-        if (connectedNodes.length === 0) {
-            this.showStatus('🔍 This node has no connections', 'error');
-            return;
-        }
-
-        // Create magical visual effects
-        this.createConnectionAnimation(nodeId, connectedNodes, connectedEdges);
-        
-        // Show detailed connection analysis
-        this.showConnectionAnalysis(nodeId, connectedNodes, connectedEdges);
-        
-        // Focus on the connection cluster
-        this.network.fit([nodeId, ...connectedNodes], {
-            animation: {
-                duration: 1500,
-                easingFunction: 'easeInOutQuad'
+        // Get direct connections only
+        this.edges.get().forEach(edge => {
+            if (edge.from === nodeId) {
+                const targetNode = this.nodes.get(edge.to);
+                dependencies.push({ node: targetNode, type: 'dependency' });
+            } else if (edge.to === nodeId) {
+                const sourceNode = this.nodes.get(edge.from);
+                dependents.push({ node: sourceNode, type: 'dependent' });
             }
         });
         
-        this.showStatus(`✨ Exploring ${connectedNodes.length} connections for ${selectedNode.label}`, 'success');
+        if (dependencies.length === 0 && dependents.length === 0) {
+            this.showStatus('🔍 This file has no direct connections', 'error');
+            return;
+        }
+        
+        // Highlight direct connections
+        this.highlightDirectConnections(nodeId, dependencies, dependents);
+        
+        // Show analysis
+        this.showDirectConnectionsAnalysis(nodeId, dependencies, dependents);
+        
+        this.showStatus(`🔗 ${selectedNode.label}: ${dependencies.length} uses, ${dependents.length} used by`, 'success');
     }
 
     createConnectionAnimation(nodeId, connectedNodes, connectedEdges) {
@@ -1803,43 +1806,40 @@ class DependencyGraphViewer {
         this.nodes.update(updates);
     }
 
-    findAllDependencies(nodeId) {
-        console.log('Finding dependencies for node:', nodeId);
-        console.log('Available edges:', this.edges.get());
-        
-        const allDependencies = this.getAllDependencies(nodeId);
+    showDependencyChain(nodeId) {
         const selectedNode = this.nodes.get(nodeId);
+        const dependencyChain = this.buildDependencyChain(nodeId, 'down');
         
-        console.log('Found dependencies:', allDependencies);
-        
-        if (allDependencies.length === 0) {
-            this.showStatus(`📦 ${selectedNode.label} has no dependencies`, 'success');
+        if (dependencyChain.length === 0) {
+            this.showStatus(`📦 ${selectedNode.label} doesn't use any other files`, 'success');
             return;
         }
-
-        this.highlightDependencyTree(nodeId, allDependencies, 'dependencies');
-        this.showDependencyAnalysis(nodeId, allDependencies, 'dependencies');
         
-        this.showStatus(`📦 Found ${allDependencies.length} total dependencies for ${selectedNode.label}`, 'success');
+        // Highlight the chain
+        this.highlightChain(nodeId, dependencyChain, 'dependency');
+        
+        // Show chain analysis
+        this.showChainAnalysis(nodeId, dependencyChain, 'dependency');
+        
+        this.showStatus(`📦 ${selectedNode.label} uses ${dependencyChain.length} files (including indirect)`, 'success');
     }
 
-    findAllDependents(nodeId) {
-        console.log('Finding dependents for node:', nodeId);
-        
-        const allDependents = this.getAllDependents(nodeId);
+    showDependentChain(nodeId) {
         const selectedNode = this.nodes.get(nodeId);
+        const dependentChain = this.buildDependencyChain(nodeId, 'up');
         
-        console.log('Found dependents:', allDependents);
-        
-        if (allDependents.length === 0) {
-            this.showStatus(`🔗 ${selectedNode.label} has no dependents`, 'success');
+        if (dependentChain.length === 0) {
+            this.showStatus(`🔗 ${selectedNode.label} is not used by any other files`, 'success');
             return;
         }
-
-        this.highlightDependencyTree(nodeId, allDependents, 'dependents');
-        this.showDependencyAnalysis(nodeId, allDependents, 'dependents');
         
-        this.showStatus(`🔗 Found ${allDependents.length} total dependents for ${selectedNode.label}`, 'success');
+        // Highlight the chain
+        this.highlightChain(nodeId, dependentChain, 'dependent');
+        
+        // Show chain analysis
+        this.showChainAnalysis(nodeId, dependentChain, 'dependent');
+        
+        this.showStatus(`🔗 ${selectedNode.label} is used by ${dependentChain.length} files (including indirect)`, 'success');
     }
 
     getAllDependencies(nodeId, visited = new Set(), depth = 0) {
@@ -2115,9 +2115,162 @@ class DependencyGraphViewer {
         document.getElementById('data-info').innerHTML = analysisHtml;
     }
 
+    buildDependencyChain(nodeId, direction, visited = new Set(), depth = 0) {
+        if (visited.has(nodeId) || depth > 10) return [];
+        
+        visited.add(nodeId);
+        const chain = [];
+        
+        this.edges.get().forEach(edge => {
+            const targetId = direction === 'down' ? 
+                (edge.from === nodeId ? edge.to : null) :
+                (edge.to === nodeId ? edge.from : null);
+                
+            if (targetId && !visited.has(targetId)) {
+                const targetNode = this.nodes.get(targetId);
+                chain.push({ node: targetNode, depth: depth + 1 });
+                
+                // Recursively find deeper connections
+                const subChain = this.buildDependencyChain(targetId, direction, new Set(visited), depth + 1);
+                chain.push(...subChain);
+            }
+        });
+        
+        return chain;
+    }
+    
+    highlightDirectConnections(nodeId, dependencies, dependents) {
+        this.resetAllNodeStyles();
+        
+        // Highlight main node
+        this.highlightNode(nodeId, '#ff6b6b', 1.4);
+        
+        // Highlight dependencies (what this uses)
+        dependencies.forEach(({ node }) => {
+            this.highlightNode(node.id, '#4ecdc4', 1.2);
+        });
+        
+        // Highlight dependents (what uses this)
+        dependents.forEach(({ node }) => {
+            this.highlightNode(node.id, '#45b7d1', 1.2);
+        });
+        
+        // Focus on the cluster
+        const allIds = [nodeId, ...dependencies.map(d => d.node.id), ...dependents.map(d => d.node.id)];
+        this.network.fit(allIds, { animation: { duration: 1000 } });
+        
+        // Auto-clear after 5 seconds
+        setTimeout(() => this.resetAllNodeStyles(), 5000);
+    }
+    
+    highlightChain(nodeId, chain, type) {
+        this.resetAllNodeStyles();
+        
+        // Highlight root
+        this.highlightNode(nodeId, '#ff6b6b', 1.4);
+        
+        // Highlight chain with depth colors
+        const colors = ['#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#a55eea'];
+        chain.forEach(({ node, depth }) => {
+            const color = colors[Math.min(depth - 1, colors.length - 1)];
+            this.highlightNode(node.id, color, 1.2);
+        });
+        
+        // Focus on the chain
+        const allIds = [nodeId, ...chain.map(c => c.node.id)];
+        this.network.fit(allIds, { animation: { duration: 1500 } });
+        
+        // Auto-clear after 8 seconds
+        setTimeout(() => this.resetAllNodeStyles(), 8000);
+    }
+    
+    showDirectConnectionsAnalysis(nodeId, dependencies, dependents) {
+        const selectedNode = this.nodes.get(nodeId);
+        
+        const analysisHtml = `
+            <div class="connection-analysis">
+                <h4 style="color: var(--accent-blue); margin-bottom: 12px;">
+                    🔗 Direct Connections: ${selectedNode.label}
+                </h4>
+                
+                ${dependencies.length > 0 ? `
+                <div class="connection-group">
+                    <h5 style="color: #4ecdc4;">📦 This file uses (${dependencies.length}):</h5>
+                    <div class="connection-list">
+                        ${dependencies.map(({ node }) => `
+                            <div class="connection-item" onclick="focusOnNode(${node.id})">
+                                <span class="connection-dot" style="background: #4ecdc4;"></span>
+                                <span class="connection-name">${node.label}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${dependents.length > 0 ? `
+                <div class="connection-group">
+                    <h5 style="color: #45b7d1;">🔗 Used by (${dependents.length}):</h5>
+                    <div class="connection-list">
+                        ${dependents.map(({ node }) => `
+                            <div class="connection-item" onclick="focusOnNode(${node.id})">
+                                <span class="connection-dot" style="background: #45b7d1;"></span>
+                                <span class="connection-name">${node.label}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        document.getElementById('data-info').innerHTML = analysisHtml;
+    }
+    
+    showChainAnalysis(nodeId, chain, type) {
+        const selectedNode = this.nodes.get(nodeId);
+        const chainByDepth = {};
+        
+        chain.forEach(({ node, depth }) => {
+            if (!chainByDepth[depth]) chainByDepth[depth] = [];
+            chainByDepth[depth].push(node);
+        });
+        
+        const title = type === 'dependency' ? 'What I Use Chain' : 'What Uses Me Chain';
+        const icon = type === 'dependency' ? '📦' : '🔗';
+        
+        const analysisHtml = `
+            <div class="chain-analysis">
+                <h4 style="color: var(--accent-blue); margin-bottom: 12px;">
+                    ${icon} ${title}: ${selectedNode.label}
+                </h4>
+                
+                <div class="chain-stats">
+                    <div>Total: ${chain.length} files</div>
+                    <div>Levels: ${Object.keys(chainByDepth).length}</div>
+                </div>
+                
+                ${Object.keys(chainByDepth).map(depth => `
+                    <div class="depth-group">
+                        <h5>Level ${depth} (${chainByDepth[depth].length} files):</h5>
+                        <div class="depth-list">
+                            ${chainByDepth[depth].map(node => `
+                                <div class="depth-item" onclick="focusOnNode(${node.id})">
+                                    <span class="depth-dot" style="background: ${this.getDepthColor(parseInt(depth))};"></span>
+                                    <span class="depth-name">${node.label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        document.getElementById('data-info').innerHTML = analysisHtml;
+    }
+    
     getDepthColor(depth) {
-        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#a55eea'];
-        return colors[Math.min(depth, colors.length - 1)];
+        const colors = ['#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#a55eea'];
+        return colors[Math.min(depth - 1, colors.length - 1)];
     }
 }
 
@@ -2170,6 +2323,24 @@ function setMouseMode(mode) {
 function showCodePreview(nodeId) {
     if (viewer) {
         viewer.showCodePreview(nodeId);
+    }
+}
+
+function showDirectConnections(nodeId) {
+    if (viewer) {
+        viewer.showDirectConnections(nodeId);
+    }
+}
+
+function showDependencyChain(nodeId) {
+    if (viewer) {
+        viewer.showDependencyChain(nodeId);
+    }
+}
+
+function showDependentChain(nodeId) {
+    if (viewer) {
+        viewer.showDependentChain(nodeId);
     }
 }
 
