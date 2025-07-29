@@ -505,32 +505,47 @@ class DependencyGraphViewer {
         return colors[normalizedType] || colors[type] || colors.unknown;
     }
 
+    identifyEntryPoints(data) {
+        const incomingEdges = new Set();
+        data.edges.forEach(edge => incomingEdges.add(edge.to));
+        
+        data.nodes.forEach(node => {
+            const hasIncoming = incomingEdges.has(node.id);
+            const isMainFile = /^(main|index|app|server)\.(js|ts|py)$/i.test(node.label);
+            const isExternal = node.external || node.type === 'external';
+            
+            // Only mark as entry point if it's a main file AND has no incoming dependencies
+            node.isEntryPoint = !isExternal && isMainFile && !hasIncoming;
+        });
+    }
+
     processNodes(rawNodes) {
         return rawNodes.map(node => {
             const isExternal = node.external || node.type === 'external';
             const isMissing = node.type === 'missing';
+            const isEntryPoint = node.isEntryPoint;
             
             return {
                 id: node.id,
                 label: node.label || node.name || `Node ${node.id}`,
                 title: this.createNodeTooltip(node),
                 color: {
-                    background: this.getNodeColor(node.type, isExternal, isMissing),
-                    border: isMissing ? '#dc3545' : '#fff',
+                    background: isEntryPoint ? '#ff6b6b' : this.getNodeColor(node.type, isExternal, isMissing),
+                    border: isEntryPoint ? '#ff4444' : (isMissing ? '#dc3545' : '#fff'),
                     highlight: {
-                        background: this.getNodeColor(node.type, isExternal, isMissing),
+                        background: isEntryPoint ? '#ff6b6b' : this.getNodeColor(node.type, isExternal, isMissing),
                         border: '#333'
                     }
                 },
-                shape: isExternal ? 'box' : (isMissing ? 'triangle' : 'dot'),
-                size: this.calculateNodeSize(node),
+                shape: isEntryPoint ? 'star' : (isExternal ? 'box' : (isMissing ? 'triangle' : 'dot')),
+                size: isEntryPoint ? this.calculateNodeSize(node) * 1.3 : this.calculateNodeSize(node),
                 font: {
-                    size: 12,
+                    size: isEntryPoint ? 14 : 12,
                     color: '#333',
                     strokeWidth: 2,
                     strokeColor: '#fff'
                 },
-                borderWidth: 2,
+                borderWidth: isEntryPoint ? 3 : 2,
                 borderWidthSelected: 4
             };
         });
@@ -570,6 +585,10 @@ class DependencyGraphViewer {
             lines.push('<em>Missing dependency</em>');
         }
         
+        if (node.isEntryPoint) {
+            lines.push('<em>🚀 Entry Point</em>');
+        }
+        
         return lines.join('<br>');
     }
 
@@ -607,6 +626,9 @@ class DependencyGraphViewer {
         try {
             // Store original data for dependency analysis
             this.originalData = data;
+            
+            // Identify entry points
+            this.identifyEntryPoints(data);
             
             // Process data
             const processedNodes = this.processNodes(data.nodes);
@@ -875,9 +897,12 @@ class DependencyGraphViewer {
             const type = node.type || 'unknown';
             const isExternal = node.external === true;
             const isMissing = node.type === 'missing';
+            const isEntryPoint = node.isEntryPoint === true;
             
             let displayType;
-            if (isMissing) {
+            if (isEntryPoint) {
+                displayType = 'entrypoint';
+            } else if (isMissing) {
                 displayType = 'missing';
             } else if (isExternal) {
                 displayType = 'external';
@@ -888,7 +913,7 @@ class DependencyGraphViewer {
             if (!typeMap.has(displayType)) {
                 typeMap.set(displayType, {
                     count: 0,
-                    color: this.getNodeColor(type, isExternal, isMissing),
+                    color: isEntryPoint ? '#ff6b6b' : this.getNodeColor(type, isExternal, isMissing),
                     label: this.getTypeLabel(displayType)
                 });
             }
@@ -931,6 +956,7 @@ class DependencyGraphViewer {
             html: 'HTML',
             external: 'External',
             missing: 'Missing',
+            entrypoint: 'Entry Point',
             config: 'Config',
             json: 'JSON',
             other: 'JavaScript', // Treat "other" .js files as JavaScript
