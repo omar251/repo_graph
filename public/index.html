@@ -469,13 +469,14 @@
 
         .status {
             margin-top: 16px;
-            padding: 16px 24px;
-            border-radius: 12px;
+            padding: 12px 20px;
+            border-radius: 8px;
             text-align: center;
             font-weight: 500;
             backdrop-filter: blur(10px);
             border: 1px solid transparent;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
 
         .status.success {
@@ -494,6 +495,12 @@
 
         .hidden {
             display: none !important;
+        }
+
+        .status:not(.success):not(.error) {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--accent-blue);
+            border-color: rgba(88, 166, 255, 0.2);
         }
 
         /* Data info styling */
@@ -1548,23 +1555,7 @@
             </button>
         </div>
         
-        <div class="instructions">
-            <h4 class="instructions-toggle" onclick="toggleInstructions()">
-                <i class="fas fa-info-circle"></i> How to Use 
-                <i class="fas fa-chevron-down toggle-icon" id="toggle-icon"></i>
-            </h4>
-            <div class="instructions-content" id="instructions-content">
-                <ul>
-                    <li><strong>Load Sample Data:</strong> See the graph with demo data instantly</li>
-                    <li><strong>Upload JSON File:</strong> Load your own network-data.json file</li>
-                    <li><strong>Browse Repository:</strong> Select a local folder to analyze its dependencies</li>
-                    <li><strong>Analyze Path:</strong> Enter a specific repository path for analysis</li>
-                    <li><strong>Server Mode:</strong> Run <code>node server.js</code> for full backend functionality</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div id="status" class="status hidden"></div>
+        <div id="status" class="status">Ready to load data. Try the sample data or upload a JSON file!</div>
     </div>
 
     <div class="main-container">
@@ -1700,6 +1691,19 @@
                 <div id="data-info" style="background: var(--bg-secondary) !important; color: var(--text-secondary) !important; border: 1px solid var(--border-primary) !important; border-radius: 8px !important; padding: 12px !important; font-size: 0.85rem !important; line-height: 1.4 !important;">
                     No data loaded
                 </div>
+
+                <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+                <div class="instructions">
+                    <div class="instructions-content">
+                        <ul style="margin-left: 16px; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4;">
+                            <li><strong>Load Sample Data:</strong> See demo instantly</li>
+                            <li><strong>Upload JSON:</strong> Load your network-data.json</li>
+                            <li><strong>Browse Repository:</strong> Select local folder</li>
+                            <li><strong>Analyze Path:</strong> Enter repository path</li>
+                            <li><strong>Search:</strong> Use Ctrl+F to find nodes</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1720,13 +1724,7 @@
 
     <script src="js/dependency-graph.js"></script>
     <script>
-        function toggleInstructions() {
-            const content = document.getElementById('instructions-content');
-            const icon = document.getElementById('toggle-icon');
-            
-            content.classList.toggle('collapsed');
-            icon.classList.toggle('rotated');
-        }
+
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1868,15 +1866,7 @@
             }
         }
 
-        // Start with instructions collapsed by default
-        document.addEventListener('DOMContentLoaded', () => {
-            const content = document.getElementById('instructions-content');
-            const icon = document.getElementById('toggle-icon');
-            
-            // Collapse by default for cleaner interface
-            content.classList.add('collapsed');
-            icon.classList.add('rotated');
-        });
+
     </script>
 </body>
 </html>

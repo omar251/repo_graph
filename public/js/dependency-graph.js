@@ -964,11 +964,13 @@ class DependencyGraphViewer {
         const statusDiv = document.getElementById('status');
         statusDiv.innerHTML = message;
         statusDiv.className = `status ${type}`;
-        statusDiv.classList.remove('hidden');
         
-        setTimeout(() => {
-            statusDiv.classList.add('hidden');
-        }, 5000);
+        if (type === 'success' || type === 'error') {
+            setTimeout(() => {
+                statusDiv.innerHTML = 'Ready for next action';
+                statusDiv.className = 'status';
+            }, 3000);
+        }
     }
 
     loadFileData(file) {

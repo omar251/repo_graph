@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A tool for analyzing and visualizing code dependencies in JavaScript and Python projects",
   "main": "analyze_dependencies.js",
-  "type": "module",
+
   "bin": {
     "repo-graph": "./analyze_dependencies.js"
   },
