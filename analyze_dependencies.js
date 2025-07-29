@@ -347,21 +347,34 @@ function resolvePath(
   }
 
   if ([".js", ".jsx", ".ts", ".tsx", ".html"].includes(fileExtension)) {
-    if (dependency.startsWith("./") || dependency.startsWith("../") || dependency.startsWith("/")) {
-      let resolved = path.resolve(currentDir, dependency);
-
+    // Handle HTML files differently - they can reference files without ./ prefix
+    if (fileExtension === ".html") {
+      let resolved;
+      
+      if (dependency.startsWith("/")) {
+        // Absolute path from repo root
+        resolved = path.resolve(repoPath, dependency.substring(1));
+      } else if (dependency.startsWith("./") || dependency.startsWith("../")) {
+        // Relative path
+        resolved = path.resolve(currentDir, dependency);
+      } else {
+        // Relative path without ./ prefix (common in HTML)
+        resolved = path.resolve(currentDir, dependency);
+      }
+      
       // If dependency already has extension, check directly
       if (path.extname(dependency)) {
         if (fs.existsSync(resolved)) {
           return resolved;
         }
       }
-      
-      // For HTML files, also try resolving from repo root for absolute paths
-      if (fileExtension === ".html" && dependency.startsWith("/")) {
-        const absoluteResolved = path.resolve(repoPath, dependency.substring(1));
-        if (fs.existsSync(absoluteResolved)) {
-          return absoluteResolved;
+    } else if (dependency.startsWith("./") || dependency.startsWith("../") || dependency.startsWith("/")) {
+      let resolved = path.resolve(currentDir, dependency);
+
+      // If dependency already has extension, check directly
+      if (path.extname(dependency)) {
+        if (fs.existsSync(resolved)) {
+          return resolved;
         }
       }
 
