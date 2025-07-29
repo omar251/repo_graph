@@ -1,0 +1,28 @@
+Category,Requirement,Description,Priority,Current Status
+Graph Visualization,Interactive Graph,Render nodes (files) and edges (dependencies) in an interactive force-directed graph,Critical,✅ Implemented
+Graph Visualization,Node Selection,Click on nodes to see details in sidebar,Critical,✅ Implemented
+Graph Visualization,Basic Navigation,Pan, zoom, reset view functionality,Critical,✅ Implemented
+Graph Visualization,Data Loading,Load dependency data from JSON file or web interface,Critical,✅ Implemented
+Graph Visualization,Sample Data,Provide example dataset for immediate use,High,✅ Implemented (JS & Python examples)
+Graph Visualization,Node Details,Show file path, type, size, and connected dependencies,Critical,✅ Implemented (connections styled)
+Graph Visualization,Search Functionality,Find nodes by filename/path,Critical,✅ Implemented
+Data Requirements,Data Structure,JSON with `nodes` (id, label, path, type, size) and `edges` (from, to, dependency),Critical,✅ Implemented
+Data Requirements,Data Validation,Validate required fields and node references,High,✅ Implemented
+Data Requirements,Error Handling,Clear error messages for invalid data,Medium,✅ Implemented
+UI/UX Requirements,Dark Theme,GitHub-like dark theme as default,Critical,✅ Implemented
+UI/UX Requirements,Responsive Design,Works on desktop and tablet devices,Medium,✅ Implemented (with mobile breakpoints)
+UI/UX Requirements,Accessibility,ARIA labels, keyboard navigation support,Medium,❌ Missing
+Enhanced Navigation & Analysis,Dependency Path Visualization,Highlight paths between selected nodes,High,❌ Missing
+Enhanced Navigation & Analysis,Architecture Layer Identification,Auto-detect and visualize logical layers (routes, services, etc.),High,❌ Missing
+Enhanced Navigation & Analysis,Problem Detection,Visual indicators for circular dependencies and high-coupling files,High,❌ Missing
+Enhanced Navigation & Analysis,File Type Filtering,Hide/show specific file types (tests, configs),Medium,✅ Implemented
+Enhanced Navigation & Analysis,Multiple Search Results,Show all matching nodes, not just first one,High,❌ Missing
+Enhanced User Assistance,Code Preview,Show actual code content of selected node,High,❌ Missing
+Enhanced User Assistance,Entry Point Identification,Automatically identify and highlight entry points,High,❌ Missing
+Enhanced User Assistance,Feature Path Tracing,Visualize flow for specific features (e.g., "movie search flow"),Medium,❌ Missing
+Enhanced User Assistance,Light/Dark Theme Toggle,Allow user to switch between themes,Medium,❌ Missing
+Could-Have Requirements (Future),AI Assistant,Context-aware guidance for understanding code structure,Medium,❌ Missing
+Could-Have Requirements (Future),Metrics Dashboard,Show dependency metrics (coupling, cohesion),Low,❌ Missing
+Could-Have Requirements (Future),History Navigation,""Back"" button for node exploration",Low,❌ Missing
+Could-Have Requirements (Future),Persistent Views,Save/restore camera position,Low,❌ Missing
+Could-Have Requirements (Future),Multiple Layout Options,Hierarchical, radial, or layered layouts,Low,❌ Missing
