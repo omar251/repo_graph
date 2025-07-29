@@ -1486,6 +1486,10 @@ class DependencyGraphViewer {
                             <i class="fas fa-code-branch"></i>
                             <span>All Dependents</span>
                         </button>
+                        <button onclick="showCodePreview(${nodeId})" class="action-btn primary" style="grid-column: span 2;">
+                            <i class="fas fa-file-code"></i>
+                            <span>View Code</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1493,6 +1497,83 @@ class DependencyGraphViewer {
 
         document.getElementById('data-info').innerHTML = detailsHtml;
         this.showStatus(`📋 Viewing details: ${node.label}`, 'success');
+    }
+
+    async showCodePreview(nodeId) {
+        const node = this.nodes.get(nodeId);
+        const originalNode = this.originalData?.nodes?.find(n => n.id === nodeId) || node;
+        
+        if (!originalNode.fullPath && !originalNode.path) {
+            this.showStatus('❌ No file path available for preview', 'error');
+            return;
+        }
+        
+        const filePath = originalNode.fullPath || originalNode.path;
+        
+        try {
+            this.showStatus('📄 Loading code preview...', 'success');
+            
+            const response = await fetch(`/file/${encodeURIComponent(filePath)}`);
+            if (!response.ok) {
+                throw new Error('File not found or cannot be read');
+            }
+            
+            const data = await response.json();
+            this.displayCodePreview(node, data.content, filePath);
+            
+        } catch (error) {
+            this.showStatus(`❌ Failed to load code: ${error.message}`, 'error');
+        }
+    }
+    
+    displayCodePreview(node, content, filePath) {
+        const lines = content.split('\n');
+        const maxLines = 50;
+        const truncated = lines.length > maxLines;
+        const displayLines = truncated ? lines.slice(0, maxLines) : lines;
+        
+        const previewHtml = `
+            <div class="code-preview">
+                <div class="code-header">
+                    <h4 style="color: var(--accent-blue); margin-bottom: 8px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-file-code" style="color: ${node.color.background};"></i>
+                        <span>${node.label}</span>
+                        <button onclick="viewer.showNodeDetails(${node.id})" class="btn-back" style="margin-left: auto; padding: 4px 8px; border: 1px solid var(--border-primary); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 0.75rem; cursor: pointer;">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                    </h4>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+                        ${filePath} ${truncated ? `(showing first ${maxLines} lines of ${lines.length})` : `(${lines.length} lines)`}
+                    </div>
+                </div>
+                
+                <div class="code-content" style="
+                    background: var(--bg-primary);
+                    border: 1px solid var(--border-primary);
+                    border-radius: 8px;
+                    padding: 12px;
+                    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+                    font-size: 0.8rem;
+                    line-height: 1.4;
+                    max-height: 400px;
+                    overflow-y: auto;
+                    white-space: pre-wrap;
+                    color: var(--text-primary);
+                ">
+${displayLines.map((line, i) => `<div style="display: flex;"><span style="color: var(--text-muted); width: 30px; text-align: right; margin-right: 12px; user-select: none;">${i + 1}</span><span>${this.escapeHtml(line) || ' '}</span></div>`).join('')}
+                    ${truncated ? `<div style="color: var(--text-muted); text-align: center; margin-top: 12px; font-style: italic;">... ${lines.length - maxLines} more lines</div>` : ''}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('data-info').innerHTML = previewHtml;
+        this.showStatus(`📄 Code preview: ${node.label}`, 'success');
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     clearNodeDetails() {
@@ -2074,6 +2155,12 @@ function toggleMouseNavigation() {
 function setMouseMode(mode) {
     if (viewer && viewer.mouseNav) {
         viewer.mouseNav.applyPreset(mode);
+    }
+}
+
+function showCodePreview(nodeId) {
+    if (viewer) {
+        viewer.showCodePreview(nodeId);
     }
 }
 
