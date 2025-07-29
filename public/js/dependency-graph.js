@@ -461,6 +461,18 @@ class DependencyGraphViewer {
                 }
             });
         }
+        
+        // Add Ctrl+F for search focus
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                const searchInput = document.getElementById('node-search');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+        });
     }
 
     getNodeColor(type, external = false, missing = false) {
@@ -761,6 +773,87 @@ class DependencyGraphViewer {
         });
 
         this.mouseNav = new MouseNavigationSystem(this.network, this.container);
+        this.setupSearch();
+    }
+
+    setupSearch() {
+        const searchInput = document.getElementById('node-search');
+        const searchResults = document.getElementById('search-results');
+        
+        if (!searchInput || !searchResults) return;
+        
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            
+            if (query.length === 0) {
+                searchResults.innerHTML = '';
+                this.network.unselectAll();
+                return;
+            }
+            
+            if (query.length < 2) return;
+            
+            const matches = this.nodes.get().filter(node => 
+                node.label.toLowerCase().includes(query) || 
+                (node.path && node.path.toLowerCase().includes(query))
+            );
+            
+            this.displaySearchResults(matches, query);
+            
+            if (matches.length > 0) {
+                this.network.selectNodes(matches.map(n => n.id));
+                this.network.fit(matches.map(n => n.id), {
+                    animation: { duration: 500 }
+                });
+            }
+        });
+    }
+    
+    displaySearchResults(matches, query) {
+        const searchResults = document.getElementById('search-results');
+        
+        if (matches.length === 0) {
+            searchResults.innerHTML = '<div style="padding: 8px; color: var(--text-muted); font-size: 0.8rem;">No matches found</div>';
+            return;
+        }
+        
+        const resultsHtml = matches.slice(0, 10).map(node => `
+            <div class="search-result-item" onclick="focusOnNode(${node.id})" style="
+                padding: 8px;
+                cursor: pointer;
+                border-radius: 4px;
+                margin-bottom: 4px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-primary);
+                transition: all 0.2s ease;
+            " onmouseover="this.style.background='var(--bg-accent)'" onmouseout="this.style.background='var(--bg-secondary)'">
+                <div style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary);">${this.highlightMatch(node.label, query)}</div>
+                ${node.path ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${this.highlightMatch(node.path, query)}</div>` : ''}
+            </div>
+        `).join('');
+        
+        if (matches.length > 10) {
+            searchResults.innerHTML = resultsHtml + `<div style="padding: 8px; color: var(--text-muted); font-size: 0.75rem; text-align: center;">+${matches.length - 10} more results</div>`;
+        } else {
+            searchResults.innerHTML = resultsHtml;
+        }
+    }
+    
+    highlightMatch(text, query) {
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<mark style="background: var(--accent-yellow); color: var(--bg-primary); padding: 1px 2px; border-radius: 2px;">$1</mark>');
+    }
+    
+    focusOnNode(nodeId) {
+        this.network.focus(nodeId, {
+            scale: 1.5,
+            animation: {
+                duration: 1000,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+        this.showNodeDetails(nodeId);
+        this.showStatus('🎯 Focused on node', 'success');
     }
 
     updateStats() {

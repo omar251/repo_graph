@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dependency Graph Viewer</title>
+        <!-- vis-network (via CDN) -->
+        <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+        <!-- Font Awesome for Icons -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <!-- Google Fonts -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg-primary: #0d1117;
+                --bg-secondary: #161b22;
+                --bg-tertiary: #1a1f25;
+                --bg-accent: #242c37;
+                --text-primary: #f0f6fc;
+                --text-secondary: #8b949e;
+                --text-muted: #6e7681;
+                --accent-blue: #58a6ff;
+                --accent-green: #3fb950;
+                --accent-orange: #d29922;
+                --accent-purple: #a55eea;
+                --border-primary: #30363d;
+                --border-secondary: #21262d;
+                --shadow-dark: rgba(1, 4, 9, 0.7);
+                --shadow-light: rgba(255, 255, 255, 0.05);
+            }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Inter", sans-serif;
+                background: var(--bg-primary);
+                color: var(--text-primary);
+                min-height: 100vh;
+            }
+            .header {
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-primary);
+                padding: 24px;
+                text-align: center;
+            }
+            .header h1 {
+                color: var(--accent-blue);
+                font-size: 2.2rem;
+                margin-bottom: 8px;
+            }
+            .header p {
+                color: var(--text-secondary);
+                font-size: 1rem;
+            }
+            .controls {
+                display: flex;
+                gap: 12px;
+                padding: 16px 24px;
+                flex-wrap: wrap;
+            }
+            .btn {
+                padding: 10px 16px;
+                border: 1px solid var(--border-primary);
+                border-radius: 8px;
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                cursor: pointer;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+            }
+            .btn:hover {
+                background: var(--bg-accent);
+                border-color: var(--accent-blue);
+                transform: translateY(-1px);
+            }
+            input#nodeSearch {
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid var(--border-primary);
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                font-size: 0.9rem;
+                width: 200px;
+            }
+            input#nodeSearch:focus {
+                outline: none;
+                border-color: var(--accent-blue);
+            }
+            .main-container {
+                display: flex;
+                height: calc(100vh - 180px);
+                margin: 0 24px 24px;
+                border-radius: 12px;
+                overflow: hidden;
+                border: 1px solid var(--border-primary);
+            }
+            .sidebar {
+                width: 320px;
+                background: var(--bg-secondary);
+                border-right: 1px solid var(--border-primary);
+                padding: 16px;
+                overflow-y: auto;
+            }
+            .sidebar h3 {
+                color: var(--accent-blue);
+                margin-bottom: 16px;
+                font-size: 1.1rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .sidebar::-webkit-scrollbar {
+                width: 6px;
+            }
+            .sidebar::-webkit-scrollbar-thumb {
+                background: var(--border-primary);
+                border-radius: 3px;
+            }
+            .sidebar::-webkit-scrollbar-thumb:hover {
+                background: var(--accent-blue);
+            }
+            #network {
+                flex: 1;
+                height: 100%;
+                width: 100%;
+                background: var(--bg-primary);
+            }
+            .visualization-layer {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: var(--text-muted);
+                z-index: 10;
+                pointer-events: none;
+            }
+            .visualization-layer i {
+                font-size: 3rem;
+                color: var(--accent-blue);
+                margin-bottom: 16px;
+            }
+            .visualization-layer h3 {
+                margin-bottom: 8px;
+                color: var(--text-primary);
+            }
+            #loading {
+                display: none;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85);
+                backdrop-filter: blur(5px);
+                z-index: 100;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                color: white;
+            }
+            #loading.show {
+                display: flex;
+            }
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid var(--border-primary);
+                border-top-color: var(--accent-blue);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            #loading-text {
+                margin-top: 20px;
+                font-size: 1.1rem;
+            }
+            #status {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                border-radius: 6px;
+                color: white;
+                font-size: 0.95rem;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            #status.success {
+                background: var(--accent-green);
+            }
+            #status.error {
+                background: #dc3545;
+            }
+            #status.warning {
+                background: var(--accent-orange);
+            }
+            #status.show {
+                opacity: 1;
+            }
+            #data-info {
+                line-height: 1.6;
+            }
+            .data-section-empty {
+                text-align: center;
+                padding: 20px;
+                color: var(--text-muted);
+            }
+            .data-section-empty i {
+                font-size: 2.5rem;
+                opacity: 0.7;
+            }
+            .data-section-empty h4 {
+                margin: 12px 0 8px;
+                color: var(--text-primary);
+            }
+            .node-header {
+                margin-bottom: 16px;
+            }
+            .node-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--accent-blue);
+                font-size: 1.1rem;
+            }
+            .type-badge {
+                background: var(--accent-blue);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .info-card {
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-primary);
+                border-radius: 8px;
+                padding: 12px;
+                transition: all 0.2s ease;
+            }
+            .info-card:hover {
+                background: var(--bg-accent);
+                border-color: var(--accent-blue);
+            }
+            .info-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--text-secondary);
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 6px;
+            }
+            .info-value {
+                color: var(--text-primary);
+                font-weight: 500;
+            }
+            .metric-number {
+                font-size: 1.3rem;
+                font-weight: 700;
+                color: var(--accent-blue);
+            }
+            .metric-label {
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                margin-left: 4px;
+            }
+            .path-code {
+                font-size: 0.8rem;
+                word-break: break-all;
+                background: var(--bg-primary);
+                padding: 4px 8px;
+                border-radius: 4px;
+                display: block;
+            }
+            .connections-section {
+                margin-top: 16px;
+                border-top: 1px solid var(--border-primary);
+                padding-top: 16px;
+            }
+            .connection-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 8px;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .connection-item:hover {
+                background: var(--bg-accent);
+                transform: translateX(4px);
+            }
+            .connection-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+            .connection-name {
+                font-size: 0.85rem;
+                color: var(--text-primary);
+            }
+            @media (max-width: 768px) {
+                .main-container {
+                    flex-direction: column;
+                }
+                .sidebar {
+                    width: 100%;
+                    max-height: 300px;
+                }
+                .btn,
+                input#nodeSearch {
+                    font-size: 0.85rem;
+                    padding: 8px 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-project-diagram"></i> Code Dependency
+                Visualizer
+            </h1>
+            <p>Explore and analyze project structure with interactive graphs</p>
+        </div>
+        <!-- Controls -->
+        <div class="controls">
+            <input
+                type="text"
+                id="nodeSearch"
+                placeholder="Search nodes..."
+                aria-label="Search nodes by label or path"
+            />
+            <button
+                class="btn"
+                onclick="loadSampleData()"
+                aria-label="Load sample dependency data"
+            >
+                <i class="fas fa-database"></i> Load Sample Data
+            </button>
+            <label
+                class="btn"
+                for="file-input"
+                aria-label="Load dependency data from JSON file"
+            >
+                <i class="fas fa-file-import"></i> Load from JSON
+                <input
+                    type="file"
+                    accept=".json"
+                    id="file-input"
+                    style="display: none"
+                />
+            </label>
+            <button
+                class="btn"
+                onclick="resetView()"
+                aria-label="Reset graph view"
+            >
+                <i class="fas fa-home"></i> Reset View
+            </button>
+            <button
+                class="btn"
+                onclick="exportImage()"
+                aria-label="Export graph as PNG"
+            >
+                <i class="fas fa-file-export"></i> Export PNG
+            </button>
+            <button
+                class="btn"
+                onclick="viewer?.togglePhysics()"
+                aria-label="Toggle graph physics"
+            >
+                <i class="fas fa-toggle-on"></i> Toggle Physics
+            </button>
+        </div>
+        <!-- Main Container -->
+        <div class="main-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h3><i class="fas fa-info-circle"></i> Node Info</h3>
+                <div id="data-info">No data selected</div>
+            </div>
+            <!-- Network Visualization -->
+            <div style="position: relative; flex: 1">
+                <div id="network"></div>
+                <div class="visualization-layer">
+                    <i class="fas fa-network-wired"></i>
+                    <h3>Graph Visualization</h3>
+                    <p>Graph will appear here after analysis</p>
+                </div>
+            </div>
+        </div>
+        <!-- Loading Overlay -->
+        <div id="loading">
+            <div class="spinner"></div>
+            <div id="loading-text">Loading graph...</div>
+        </div>
+        <!-- Status Message -->
+        <div id="status">Status message</div>
+
+        <!-- DataSection Class -->
+        <script>
+            class DataSection {
+                constructor(containerId = "data-info") {
+                    this.container = document.getElementById(containerId);
+                    this.currentMode = "empty";
+                    if (!this.container) {
+                        console.error(
+                            `DataSection: Container #${containerId} not found`,
+                        );
+                        return;
+                    }
+                    this.showEmptyState();
+                }
+                showEmptyState() {
+                    this.currentMode = "empty";
+                    this.container.innerHTML = `
+          <div class="data-section-empty">
+            <i class="fas fa-info-circle"></i>
+            <h4>No Data Selected</h4>
+            <p>Click on a node to view details</p>
+          </div>
+        `;
+                }
+                showNodeDetails(
+                    nodeData,
+                    connectionData = {},
+                    originalData = {},
+                ) {
+                    const node = nodeData?.node || {};
+                    const connectedNodes = connectionData.connectedNodes || [];
+                    const originalNode =
+                        originalData.nodes?.find((n) => n.id === node.id) || {};
+                    this.currentMode = "node-details";
+                    const connectionsHtml =
+                        connectedNodes.length > 0
+                            ? `
+          <div class="connections-section">
+            <h5 style="color: var(--text-secondary); margin-bottom: 8px;">
+              <i class="fas fa-sitemap"></i> Connected Nodes
+            </h5>
+            ${connectedNodes
+                .map((id) => {
+                    const n =
+                        originalData.nodes?.find((n) => n.id === id) || {};
+                    const edge = originalData.edges?.find(
+                        (e) =>
+                            (e.from === node.id && e.to === id) ||
+                            (e.to === node.id && e.from === id),
+                    );
+                    const dependency = edge?.dependency || "";
+                    return `<div class="dep-item" title="${dependency}">${n.label}</div>`;
+                })
+                .join("")}
+          </div>
+        `
+                            : "";
+                    this.container.innerHTML = `
+          <div class="node-details">
+            <div class="node-header">
+              <h4 class="node-title">
+                <i class="fas fa-file-code"></i> ${node.label || "Unknown"}
+                <span class="type-badge">${this.getTypeLabel(
+                    originalNode.type,
+                )}</span>
+              </h4>
+            </div>
+            <div class="info-card">
+              <div class="info-label"><i class="fas fa-folder-open"></i> Path</div>
+              <div class="info-value">
+                <code class="path-code" title="${
+                    originalNode.path || "N/A"
+                }">${originalNode.path || "N/A"}</code>
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-label"><i class="fas fa-network-wired"></i> Connections</div>
+              <div class="info-value">
+                <span class="metric-number">${connectedNodes.length}</span>
+                <span class="metric-label">total</span>
+              </div>
+            </div>
+            ${
+                originalNode.size
+                    ? `
+            <div class="info-card">
+              <div class="info-label"><i class="fas fa-file-alt"></i> File Size</div>
+              <div class="info-value">${this.formatFileSize(
+                  originalNode.size,
+              )}</div>
+            </div>
+            `
+                    : ""
+            }
+            ${connectionsHtml}
+          </div>
+        `;
+                }
+                formatFileSize(bytes) {
+                    if (!bytes) return "Unknown";
+                    const sizes = ["B", "KB", "MB", "GB"];
+                    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                    return (
+                        (bytes / Math.pow(1024, i)).toFixed(2) + " " + sizes[i]
+                    );
+                }
+                getTypeLabel(type) {
+                    const map = {
+                        js: "JS",
+                        ts: "TS",
+                        jsx: "React",
+                        tsx: "TSX",
+                        py: "Python",
+                        css: "CSS",
+                        html: "HTML",
+                        external: "External",
+                    };
+                    return map[type] || type?.toUpperCase() || "Unknown";
+                }
+            }
+        </script>
+
+        <!-- Graph Viewer -->
+        <script>
+            let viewer;
+            class DependencyGraphViewer {
+                constructor() {
+                    this.network = null;
+                    this.nodes = null;
+                    this.edges = null;
+                    this.container = document.getElementById("network");
+                    this.dataSection = new DataSection("data-info");
+                    this.setupFileInput();
+                    this.setupSearch();
+                }
+                setupFileInput() {
+                    const fileInput = document.getElementById("file-input");
+                    fileInput.addEventListener("change", (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            this.showLoading(`Loading ${file.name}...`);
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                try {
+                                    const jsonData = JSON.parse(
+                                        event.target.result,
+                                    );
+                                    this.validateAndLoadData(jsonData);
+                                } catch (err) {
+                                    this.hideLoading();
+                                    this.showStatus(
+                                        `❌ Invalid JSON: ${err.message}`,
+                                        "error",
+                                    );
+                                }
+                            };
+                            reader.onerror = () => {
+                                this.hideLoading();
+                                this.showStatus(
+                                    "❌ Failed to read file",
+                                    "error",
+                                );
+                            };
+                            reader.readAsText(file);
+                        }
+                    });
+                }
+                setupSearch() {
+                    document
+                        .getElementById("nodeSearch")
+                        .addEventListener("input", (e) => {
+                            const query = e.target.value.toLowerCase();
+                            if (!this.originalData) {
+                                this.showStatus("⚠️ No data loaded", "warning");
+                                return;
+                            }
+                            const matchingNode = this.originalData.nodes.find(
+                                (node) =>
+                                    node.label.toLowerCase().includes(query) ||
+                                    node.path.toLowerCase().includes(query),
+                            );
+                            if (matchingNode) {
+                                this.network.focus(matchingNode.id, {
+                                    scale: 1.5,
+                                    animation: { duration: 1000 },
+                                });
+                                const visNode = this.nodes.get(matchingNode.id);
+                                this.dataSection.showNodeDetails(
+                                    { node: visNode },
+                                    {
+                                        connectedNodes:
+                                            this.network.getConnectedNodes(
+                                                matchingNode.id,
+                                            ),
+                                        connectedEdges:
+                                            this.network.getConnectedEdges(
+                                                matchingNode.id,
+                                            ),
+                                    },
+                                    this.originalData,
+                                );
+                                this.showStatus(
+                                    `🔍 Found node: ${matchingNode.label}`,
+                                    "success",
+                                );
+                            } else {
+                                this.showStatus(
+                                    "⚠️ No matching nodes found",
+                                    "warning",
+                                );
+                            }
+                        });
+                }
+                validateAndLoadData(data) {
+                    if (!data.nodes || !Array.isArray(data.nodes)) {
+                        this.hideLoading();
+                        this.showStatus(
+                            '❌ Invalid data: Missing or invalid "nodes" array',
+                            "error",
+                        );
+                        return;
+                    }
+                    if (!data.edges || !Array.isArray(data.edges)) {
+                        this.hideLoading();
+                        this.showStatus(
+                            '❌ Invalid data: Missing or invalid "edges" array',
+                            "error",
+                        );
+                        return;
+                    }
+                    const nodeIds = new Set(data.nodes.map((node) => node.id));
+                    for (const node of data.nodes) {
+                        if (
+                            node.id === undefined ||
+                            !node.label ||
+                            !node.type ||
+                            !node.path
+                        ) {
+                            this.hideLoading();
+                            this.showStatus(
+                                "❌ Invalid data: Nodes must have id, label, type, and path",
+                                "error",
+                            );
+                            return;
+                        }
+                    }
+                    for (const edge of data.edges) {
+                        if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) {
+                            this.hideLoading();
+                            this.showStatus(
+                                "❌ Invalid data: Edges reference non-existent nodes",
+                                "error",
+                            );
+                            return;
+                        }
+                    }
+                    this.originalData = data;
+                    this.renderGraph();
+                }
+                renderGraph() {
+                    if (!window.vis) {
+                        this.hideLoading();
+                        this.showStatus(
+                            "❌ Vis-network library failed to load",
+                            "error",
+                        );
+                        return;
+                    }
+                    const visNodes = this.originalData.nodes.map((node) => ({
+                        id: Number(node.id),
+                        label: node.label,
+                        color: {
+                            background: this.dataSection.getNodeColor
+                                ? this.dataSection.getNodeColor(node.type)
+                                : "#9ca3af",
+                        },
+                        type: node.type,
+                        title: node.path,
+                        size: node.size
+                            ? Math.min(
+                                  50,
+                                  Math.max(20, Math.log(node.size) * 5),
+                              )
+                            : 25,
+                    }));
+                    const visEdges = this.originalData.edges.map((edge) => ({
+                        from: Number(edge.from),
+                        to: Number(edge.to),
+                        label: edge.dependency,
+                        title: edge.dependency,
+                        arrows: "to",
+                    }));
+
+                    this.nodes = new vis.DataSet(visNodes);
+                    this.edges = new vis.DataSet(visEdges);
+
+                    const options = {
+                        nodes: {
+                            borderWidth: 2,
+                            shadow: true,
+                            margin: 20,
+                            font: { size: 14, color: "#f0f6fc" },
+                            shape: "circle",
+                        },
+                        edges: {
+                            smooth: { type: "continuous" },
+                            color: { color: "#848484", highlight: "#333" },
+                            width: 2,
+                            hoverWidth: 4,
+                            font: { size: 10, color: "#8b949e" },
+                            labelHighlightBold: false,
+                        },
+                        physics: {
+                            enabled: true,
+                            barnesHut: {
+                                gravitationalConstant: -3000,
+                                centralGravity: 0.1,
+                                springLength: 300,
+                                springConstant: 0.02,
+                                damping: 0.15,
+                            },
+                            stabilization: { iterations: 300 },
+                        },
+                        interaction: {
+                            hover: true,
+                            navigationButtons: true,
+                        },
+                    };
+
+                    this.network = new vis.Network(
+                        this.container,
+                        { nodes: this.nodes, edges: this.edges },
+                        options,
+                    );
+
+                    this.network.on("stabilizationProgress", (params) => {
+                        const progress = Math.round(
+                            (params.iterations / params.total) * 100,
+                        );
+                        document.getElementById("loading-text").textContent =
+                            `Stabilizing network... ${progress}%`;
+                    });
+
+                    this.network.on("stabilizationIterationsDone", () => {
+                        setTimeout(() => {
+                            this.hideLoading();
+                            document.querySelector(
+                                ".visualization-layer",
+                            ).style.display = "none";
+                            const totalFiles = this.originalData.nodes.length;
+                            const totalDeps = this.originalData.edges.length;
+                            this.showStatus(
+                                `✅ Loaded: ${totalFiles} files, ${totalDeps} dependencies`,
+                                "success",
+                            );
+                        }, 500);
+                    });
+
+                    this.network.on("click", (params) => {
+                        if (params.nodes.length > 0) {
+                            const nodeId = params.nodes[0];
+                            const node = this.nodes.get(nodeId);
+                            if (!node) return;
+                            const connectedNodes =
+                                this.network.getConnectedNodes(nodeId);
+                            const connectedEdges =
+                                this.network.getConnectedEdges(nodeId);
+                            this.dataSection.showNodeDetails(
+                                { node },
+                                { connectedNodes, connectedEdges },
+                                this.originalData,
+                            );
+                        } else {
+                            this.dataSection.showEmptyState();
+                        }
+                    });
+                }
+                showLoading(text = "Loading...") {
+                    document.getElementById("loading").classList.add("show");
+                    document.getElementById("loading-text").textContent = text;
+                }
+                hideLoading() {
+                    document.getElementById("loading").classList.remove("show");
+                }
+                showStatus(message, type = "success") {
+                    const status = document.getElementById("status");
+                    if (!status) return;
+                    status.textContent = message;
+                    status.className = `status ${type}`;
+                    status.classList.add("show");
+                    setTimeout(() => status.classList.remove("show"), 5000);
+                }
+                loadSampleData() {
+                    this.showLoading("Loading sample data...");
+                    const sampleData = {
+                        nodes: [
+                            {
+                                id: 0,
+                                label: "index.js",
+                                path: "config/index.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/config/index.js",
+                                type: "js",
+                                size: 1024,
+                            },
+                            {
+                                id: 1,
+                                label: "network_storage.js",
+                                path: "lib/network_storage.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/lib/network_storage.js",
+                                type: "js",
+                                size: 2048,
+                            },
+                            {
+                                id: 2,
+                                label: "index.js",
+                                path: "middleware/index.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/middleware/index.js",
+                                type: "js",
+                                size: 1536,
+                            },
+                            {
+                                id: 3,
+                                label: "ai.js",
+                                path: "routes/ai.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/ai.js",
+                                type: "js",
+                                size: 3072,
+                            },
+                            {
+                                id: 4,
+                                label: "cache.js",
+                                path: "routes/cache.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/cache.js",
+                                type: "js",
+                                size: 2560,
+                            },
+                            {
+                                id: 5,
+                                label: "health.js",
+                                path: "routes/health.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/health.js",
+                                type: "js",
+                                size: 1280,
+                            },
+                            {
+                                id: 6,
+                                label: "index.js",
+                                path: "routes/index.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/index.js",
+                                type: "js",
+                                size: 2048,
+                            },
+                            {
+                                id: 7,
+                                label: "movies.js",
+                                path: "routes/movies.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/movies.js",
+                                type: "js",
+                                size: 4096,
+                            },
+                            {
+                                id: 8,
+                                label: "networks.js",
+                                path: "routes/networks.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/networks.js",
+                                type: "js",
+                                size: 2304,
+                            },
+                            {
+                                id: 9,
+                                label: "search.js",
+                                path: "routes/search.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/search.js",
+                                type: "js",
+                                size: 3584,
+                            },
+                            {
+                                id: 10,
+                                label: "tts.js",
+                                path: "routes/tts.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/routes/tts.js",
+                                type: "js",
+                                size: 1792,
+                            },
+                            {
+                                id: 11,
+                                label: "server.js",
+                                path: "server.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/server.js",
+                                type: "js",
+                                size: 5120,
+                            },
+                            {
+                                id: 12,
+                                label: "server_original.js",
+                                path: "server_original.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/server_original.js",
+                                type: "js",
+                                size: 4608,
+                            },
+                            {
+                                id: 13,
+                                label: "aiService.js",
+                                path: "services/aiService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/aiService.js",
+                                type: "js",
+                                size: 3072,
+                            },
+                            {
+                                id: 14,
+                                label: "cacheService.js",
+                                path: "services/cacheService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/cacheService.js",
+                                type: "js",
+                                size: 2560,
+                            },
+                            {
+                                id: 15,
+                                label: "edgeTTSService.js",
+                                path: "services/edgeTTSService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/edgeTTSService.js",
+                                type: "js",
+                                size: 2048,
+                            },
+                            {
+                                id: 16,
+                                label: "enhancementService.js",
+                                path: "services/enhancementService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/enhancementService.js",
+                                type: "js",
+                                size: 3328,
+                            },
+                            {
+                                id: 17,
+                                label: "movieDataService.js",
+                                path: "services/movieDataService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/movieDataService.js",
+                                type: "js",
+                                size: 3840,
+                            },
+                            {
+                                id: 18,
+                                label: "tmdbService.js",
+                                path: "services/tmdbService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/tmdbService.js",
+                                type: "js",
+                                size: 2816,
+                            },
+                            {
+                                id: 19,
+                                label: "traktService.js",
+                                path: "services/traktService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/traktService.js",
+                                type: "js",
+                                size: 2560,
+                            },
+                            {
+                                id: 20,
+                                label: "ttsService.js",
+                                path: "services/ttsService.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/services/ttsService.js",
+                                type: "js",
+                                size: 2304,
+                            },
+                            {
+                                id: 21,
+                                label: "logger.js",
+                                path: "utils/logger.js",
+                                fullPath:
+                                    "/home/C/Dev/python/CinemaTec/src/utils/logger.js",
+                                type: "js",
+                                size: 1024,
+                            },
+                        ],
+                        edges: [
+                            { from: 2, to: 0, dependency: "../config" },
+                            { from: 2, to: 21, dependency: "../utils/logger" },
+                            {
+                                from: 3,
+                                to: 13,
+                                dependency: "../services/aiService",
+                            },
+                            { from: 3, to: 21, dependency: "../utils/logger" },
+                            {
+                                from: 4,
+                                to: 17,
+                                dependency: "../services/movieDataService",
+                            },
+                            {
+                                from: 4,
+                                to: 14,
+                                dependency: "../services/cacheService",
+                            },
+                            { from: 4, to: 21, dependency: "../utils/logger" },
+                            { from: 5, to: 0, dependency: "../config" },
+                            {
+                                from: 5,
+                                to: 14,
+                                dependency: "../services/cacheService",
+                            },
+                            {
+                                from: 5,
+                                to: 13,
+                                dependency: "../services/aiService",
+                            },
+                            { from: 5, to: 21, dependency: "../utils/logger" },
+                            { from: 6, to: 7, dependency: "./movies" },
+                            { from: 6, to: 9, dependency: "./search" },
+                            { from: 6, to: 8, dependency: "./networks" },
+                            { from: 6, to: 3, dependency: "./ai" },
+                            { from: 6, to: 5, dependency: "./health" },
+                            { from: 6, to: 4, dependency: "./cache" },
+                            { from: 6, to: 10, dependency: "./tts" },
+                            {
+                                from: 7,
+                                to: 19,
+                                dependency: "../services/traktService",
+                            },
+                            {
+                                from: 7,
+                                to: 16,
+                                dependency: "../services/enhancementService",
+                            },
+                            {
+                                from: 7,
+                                to: 17,
+                                dependency: "../services/movieDataService",
+                            },
+                            { from: 7, to: 21, dependency: "../utils/logger" },
+                            {
+                                from: 8,
+                                to: 1,
+                                dependency: "../lib/network_storage",
+                            },
+                            { from: 8, to: 21, dependency: "../utils/logger" },
+                            { from: 8, to: 0, dependency: "../config" },
+                            {
+                                from: 9,
+                                to: 19,
+                                dependency: "../services/traktService",
+                            },
+                            {
+                                from: 9,
+                                to: 16,
+                                dependency: "../services/enhancementService",
+                            },
+                            {
+                                from: 9,
+                                to: 17,
+                                dependency: "../services/movieDataService",
+                            },
+                            { from: 9, to: 21, dependency: "../utils/logger" },
+                            {
+                                from: 10,
+                                to: 20,
+                                dependency: "../services/ttsService",
+                            },
+                            { from: 10, to: 21, dependency: "../utils/logger" },
+                            { from: 11, to: 0, dependency: "./config" },
+                            { from: 11, to: 21, dependency: "./utils/logger" },
+                            { from: 11, to: 2, dependency: "./middleware" },
+                            { from: 11, to: 6, dependency: "./routes" },
+                            {
+                                from: 11,
+                                to: 14,
+                                dependency: "./services/cacheService",
+                            },
+                            {
+                                from: 11,
+                                to: 17,
+                                dependency: "./services/movieDataService",
+                            },
+                            {
+                                from: 11,
+                                to: 19,
+                                dependency: "./services/traktService",
+                            },
+                            {
+                                from: 11,
+                                to: 18,
+                                dependency: "./services/tmdbService",
+                            },
+                            {
+                                from: 11,
+                                to: 13,
+                                dependency: "./services/aiService",
+                            },
+                            {
+                                from: 11,
+                                to: 16,
+                                dependency: "./services/enhancementService",
+                            },
+                            {
+                                from: 12,
+                                to: 1,
+                                dependency: "./lib/network_storage",
+                            },
+                            { from: 13, to: 0, dependency: "../config" },
+                            { from: 13, to: 21, dependency: "../utils/logger" },
+                            { from: 13, to: 14, dependency: "./cacheService" },
+                            { from: 14, to: 0, dependency: "../config" },
+                            { from: 14, to: 21, dependency: "../utils/logger" },
+                            { from: 15, to: 21, dependency: "../utils/logger" },
+                            { from: 16, to: 19, dependency: "./traktService" },
+                            { from: 16, to: 18, dependency: "./tmdbService" },
+                            { from: 16, to: 14, dependency: "./cacheService" },
+                            {
+                                from: 16,
+                                to: 17,
+                                dependency: "./movieDataService",
+                            },
+                            { from: 16, to: 21, dependency: "../utils/logger" },
+                            { from: 17, to: 0, dependency: "../config" },
+                            { from: 17, to: 21, dependency: "../utils/logger" },
+                            { from: 18, to: 0, dependency: "../config" },
+                            { from: 18, to: 21, dependency: "../utils/logger" },
+                            { from: 18, to: 14, dependency: "./cacheService" },
+                            { from: 19, to: 0, dependency: "../config" },
+                            { from: 19, to: 21, dependency: "../utils/logger" },
+                            { from: 19, to: 14, dependency: "./cacheService" },
+                            { from: 20, to: 21, dependency: "../utils/logger" },
+                            { from: 20, to: 14, dependency: "./cacheService" },
+                            {
+                                from: 20,
+                                to: 15,
+                                dependency: "./edgeTTSService",
+                            },
+                        ],
+                    };
+                    this.originalData = sampleData;
+                    this.renderGraph();
+                }
+                togglePhysics() {
+                    if (this.network) {
+                        const enabled = !this.network.physics.options.enabled;
+                        this.network.setOptions({ physics: { enabled } });
+                        this.showStatus(
+                            `🎮 Physics ${enabled ? "enabled" : "disabled"}`,
+                            "success",
+                        );
+                    }
+                }
+                resetView() {
+                    if (this.network) {
+                        this.network.fit({ animation: { duration: 1000 } });
+                        this.showStatus("🎯 View reset", "success");
+                    }
+                }
+                exportImage() {
+                    if (this.network) {
+                        const canvas = this.network.canvas.frame.canvas;
+                        const link = document.createElement("a");
+                        link.download = "dependency-graph.png";
+                        link.href = canvas.toDataURL();
+                        link.click();
+                        this.showStatus("📸 Image exported!", "success");
+                    }
+                }
+            }
+
+            function loadSampleData() {
+                if (!viewer) viewer = new DependencyGraphViewer();
+                viewer.loadSampleData();
+            }
+            function resetView() {
+                viewer?.resetView();
+            }
+            function exportImage() {
+                viewer?.exportImage();
+            }
+
+            window.onload = () => {
+                viewer = new DependencyGraphViewer();
+                window.viewer = viewer;
+            };
+        </script>
+    </body>
+</html>
