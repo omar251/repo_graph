@@ -1,18 +1,26 @@
 {
   "name": "repo-dependency-graph",
-  "version": "1.0.0",
-  "description": "A tool for analyzing and visualizing code dependencies in JavaScript and Python projects",
-  "main": "analyze_dependencies.js",
+  "version": "2.0.0",
+  "description": "A powerful tool for analyzing and visualizing code dependencies in JavaScript, TypeScript, and Python projects with interactive network graphs",
+  "main": "src/index.js",
 
   "bin": {
     "repo-graph": "./analyze_dependencies.js"
   },
   "scripts": {
+    "start": "node src/index.js",
     "analyze": "node analyze_dependencies.js",
-    "start": "node analyze_dependencies.js",
-    "serve": "python -m http.server 8000",
     "server": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node server.js",
+    "serve": "python -m http.server 8000",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ tests/ --ext .js",
+    "lint:fix": "eslint src/ tests/ --ext .js --fix",
+    "docs": "jsdoc src/ -r -d docs/api",
+    "build": "npm run lint && npm run test",
+    "prepare": "npm run build"
   },
   "keywords": [
     "dependency-analysis",
@@ -23,20 +31,37 @@
     "static-analysis",
     "dependency-graph"
   ],
-  "author": "",
+  "author": "Repository Dependency Graph Contributors",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^8.57.0",
+    "jsdoc": "^4.0.2",
+    "@jest/globals": "^29.7.0"
   },
   "engines": {
     "node": ">=14.0.0"
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/your-org/repo-dependency-graph.git"
   },
   "bugs": {
-    "url": ""
+    "url": "https://github.com/your-org/repo-dependency-graph/issues"
   },
-  "homepage": ""
+  "homepage": "https://github.com/your-org/repo-dependency-graph#readme",
+  "files": [
+    "src/",
+    "public/",
+    "examples/",
+    "docs/",
+    "analyze_dependencies.js",
+    "server.js",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ]
 }

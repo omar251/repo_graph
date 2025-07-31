@@ -8,12 +8,54 @@ graph.js
 *.dependency-graph.json
 *.dependency-graph.js
 
-# Common IDE and editor files
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+
+# Build outputs
+dist/
+build/
+out/
+
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.classpath
+.settings/
 
 # OS generated files
 .DS_Store
@@ -23,13 +65,18 @@ graph.js
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Node.js (if package.json is used)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+Desktop.ini
 
 # Temporary files
 *.tmp
 *.temp
+tmp_rovodev_*
+
+# Documentation build
+docs/api/
+
+# PM2
+.pm2/
+
+# Docker
+.dockerignore

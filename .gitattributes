@@ -1,0 +1,47 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Documentation
+*.txt text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+
+# Configuration files
+*.config.js text eol=lf
+.*rc text eol=lf
+.*ignore text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+
+# Archives
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# Generated files
+network-data.json linguist-generated=true
+coverage/ linguist-generated=true
+docs/api/ linguist-generated=true
+
+# Example data
+examples/ linguist-documentation=true
+docs/ linguist-documentation=true
